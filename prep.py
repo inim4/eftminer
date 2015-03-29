@@ -298,31 +298,35 @@ def computeRevenue(transMrg):
 	return dfRev
 
 
-def computeDailySlope(datGrp):
-	
-	dfTmp = pd.DataFrame({'rid':[datGrp.index[m][0] for m in range(0,len(datGrp))],'sic':[datGrp.index[m][1] for m in range(0,len(datGrp))], 'dt':[datGrp['dt'][m] for m in range(0,len(datGrp))], 'famt':[datGrp['famt'][m] for m in range(0,len(datGrp))]})
-	dfTmpSorted = dfTmp.sort_index(by='dt', ascending=True)
-	dfTmpSorted['sorted']=[o for o in range(0,len(dfTmpSorted))]
-	x = dfTmpSorted['sorted']
-	y = dfTmpSorted['famt']
-	tmp1=[]
-	tmp2=[]
-	for p in range(0,len(x)):
-		tmp1.append(x[p])
-	for q in range(0,len(y)):
-		tmp2.append(y[q])
+def computeDailySlope(indexGrp, datGrp):
 
-	datX = np.array(tmp1)
-	datY = np.array(tmp2)
+	slopeDat = pd.DataFrame({'rid':[],'sic':[], 'intercept':[], 'slope':[]})
+	for i in range(0,len(indexGrp)):
+		tmpArr = datGrp.get_group(indexGrp)
+		tmpArr = tmpArr.set_index(['strretailerid','sic'])
+		dfTmp = pd.DataFrame({'rid':[tmpArr.index[m][0] for m in range(0,len(tmpArr))],'sic':[tmpArr.index[m][1] for m in range(0,len(tmpArr))], 'dt':[tmpArr['dt'][m] for m in range(0,len(tmpArr))], 'famt':[tmpArr['famt'][m] for m in range(0,len(tmpArr))]})
+		dfTmpSorted = dfTmp.sort_index(by='dt', ascending=True)
+		dfTmpSorted['sorted']=[o for o in range(0,len(dfTmpSorted))]
+		x = dfTmpSorted['sorted']
+		y = dfTmpSorted['famt']
+		tmp1=[]
+		tmp2=[]
+		for p in range(0,len(x)):
+			tmp1.append(x[p])
+		for q in range(0,len(y)):
+			tmp2.append(y[q])
 
-	lm = LinearRegression()
-	lm.fit(datX[:,np.newaxis],datY)
-	intercept = lm.intercept_
-	slope = lm.coef_[0]
-	dfTheta = pd.DataFrame({'rid':(dfTmpSorted['rid'][0]),'sic':(dfTmpSorted['sic'][0]), 'intercept':[intercept], 'slope':[slope]})
-	
+		datX = np.array(tmp1)
+		datY = np.array(tmp2)
 
-	return dfTheta
+		lm = LinearRegression()
+		lm.fit(datX[:,np.newaxis],datY)
+		intercept = lm.intercept_
+		slope = lm.coef_[0]
+		dfTheta = pd.DataFrame({'rid':(dfTmpSorted['rid'][0]),'sic':(dfTmpSorted['sic'][0]), 'intercept':[intercept], 'slope':[slope]})
+		slopeDat = slopeDat.append(dfTheta, ignore_index=True)
+
+	return slopeDat
 
 
 
@@ -336,6 +340,12 @@ def aggAll(dfAll):
 	- dfRev
 	- dfDailySlope
 	'''
+	
+	dfTrans = dfAll[0]
+	dfFiidAll = dfAll[1]
+	dfMergeRet = dfAll[2]
+	dfRev = dfAll[3]
+	dfDailySlope = dfAll[4]
 
 	agg1 = pd.merge(dfTrans,dfFiidAll,how='outer',on=['rid','sic'])
 	agg2 = pd.merge(agg1,dfMergeRet,how='outer',on=['rid','sic'])
