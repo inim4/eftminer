@@ -4,21 +4,20 @@ import math
 import time
 import datetime
 from datetime import datetime
-from numpy import zeros, ones, array, linspace, logspace
-from pylab import scatter, show, title, xlabel, ylabel, plot, contour
+from sklearn.linear_model import LinearRegression
 
 
-def readData(fileData):
+
+def readData(fileDat):
+	
 	headstr=['strretailerid','str_time', 'str_sic','stracqfiid', 'strcardfiid','strcardno','strtrancde','famt1','famt2', 'tc','t','aa','c']
-	dat = pd.read_table(fileData,sep='\t',index_col=None,header=None,names=headstr,error_bad_lines=False,dtype = unicode); 
-
-	alldata=dat[1:len(dat)]
+	dat = pd.read_table(fileDat,sep='\t',index_col=None,header=None,names=headstr,error_bad_lines=False,dtype = unicode); 
+	alldata = dat[1:len(dat)]
 
 	return alldata
 
 
 def selectData(datparam, strdate):
-
 
 
 	'''
@@ -51,6 +50,12 @@ def selectData(datparam, strdate):
 	dat = datparam[(datparam['sic'].isin(siclist)) & (datparam['t'].isin(cardlist))]
 	dat['acqfiid']= np.where(dat['stracqfiid'].str.contains('ANZ'),'ANZ','NONANZ')
 	dat['cardfiid']= np.where(dat['strcardfiid'].str.contains('ANZ'),'ANZ','NONANZ')
+	
+	
+	
+	return dat
+
+def selectTrans(dat):
 
 	'''
 	convert / discretize datetime to time of a day
@@ -83,22 +88,15 @@ def selectData(datparam, strdate):
 	cdemin=['14','22']
 	rev = datFilter[datFilter['tc'].isin(cdepos)]
 	retrn = datFilter[datFilter['tc'].isin(cdemin)]
+	datTrans =[rev,retrn]
+
+	return datTrans
+
+def frameTrans(datTrans):
+
+	rev = datTrans[0]
+	retrn = datTrans[1]
 	retrn['famt']=retrn['famt1']
-
-	datRev = rev[['strretailerid','sic','strdate','dt','daytime','stracqfiid','strcardfiid','strcardno','tc','t','aa','c','famt1','famt2']]
-	datRet = retrn[['strretailerid','sic','strdate','dt','daytime','stracqfiid','strcardfiid','strcardno','tc','t','aa','c','famt1','famt2','famt']]
-	datAll = [datRev,datRet]
-
-	return datAll
-
-
-
-
-def groupingTrans(dat):
-
-	rev = dat[0]
-	ret = dat[1]
-
 
 	'''
 	numtc10 (n total normal purchase transaction)
@@ -145,53 +143,9 @@ def groupingTrans(dat):
 
 	'''
 	merging transaction
-	'''
-
-	pieces = [tc10, tc13, tc_cashb, tc17, tc_auth, tc21]
-	datTrans = concat(pieces, ignore_index=True)
-	tc = [numtc10,sumtc10,numtc13,sumtc13,numtccashb,sumtccashb,numtc17]
-
-	dfTc = dfTrans(datTrans, ret, tc)
-	
-	dfFiid = fiidTrans(datTrans)
-
-
-	return df
-
-
-def dfTrans(datTrans, retrn, tc):
-
-	'''
-	DataFrame for computing total number and amount of merchandise returned
-	numreturn (n total return transaction)
-	sumreturn (monetary amount of return transaction)
-	retailers and customers are present in both data revenue and data return
-	retailer id data revenue = retailer id data return
-	customer id data revenue = customer id data return
-	'''
-	nrevGrp= datTrans.groupby(['strretailerid','sic','strcardno']).size()
-	nretGrp= retrn.groupby(['strretailerid','sic','strcardno']).size()
-	#srevGrp= datTrans.groupby(['strretailerid','sic','strcardno'])['famt'].sum()
-	sretGrp= retrn.groupby(['strretailerid','sic','strcardno'])['famt'].sum()
-	nrevInd= nrevGrp.index
-	nretInd = nretGrp.index
-	#srevInd= srevGrp.index
-	sretInd = sretGrp.index
-	dfRev = pd.DataFrame({'rid':[nrevInd[i][0] for i in range(0,len(nrevGrp))],'sic':[nrevInd[i][1] for i in range(0,len(nrevGrp))],'cid':[nrevInd[i][2] for i in range(0,len(nrevGrp))]})
-	#dfRev2 = pd.DataFrame({'rid':[srevInd[i][0] for i in range(0,len(srevGrp))],'sic':[srevInd[i][1] for i in range(0,len(srevGrp))],'cid':[srevInd[i][2] for i in range(0,len(srevGrp))], 'amtreturn': [srevInd[j] for j in range(0,len(srevGrp))]})
-	#dfRev12 = pd.merge(dfRev1,dfRev2,how='inner',on=['rid','sic','cid'])
-	dfRet1 = pd.DataFrame({'rid':[nretInd[i][0] for i in range(0,len(nretGrp))],'sic':[nretInd[i][1] for i in range(0,len(nretGrp))],'cid':[nretInd[i][2] for i in range(0,len(nretGrp))], 'nreturn':[nretGrp[j] for j in range(0,len(nretGrp))]})
-	dfRet2 = pd.DataFrame({'rid':[sretInd[i][0] for i in range(0,len(sretGrp))],'sic':[sretInd[i][1] for i in range(0,len(sretGrp))],'cid':[sretInd[i][2] for i in range(0,len(sretGrp))], 'amtreturn': [sretGrp[j] for j in range(0,len(sretGrp))] })
-	dfRet12 = pd.merge(dfRet1,dfRet2,how='outer',on=['rid','sic','cid'])
-	dfMergeRet = pd.merge(dfRev,dfRet12,how='inner',on=['rid','sic','cid'])
-
-	numtc10 = tc[0]
-	sumtc10 = tc[1]
-	numtc13 = tc[2]
-	sumtc13 = tc[3]
-	numtccashb = tc[4]
-	sumtccashb = tc[5]
-	numtc17 = tc[6]
+	'''	
+	transArr = [tc10,tc13,tc_cashb,tc17,tc_auth,tc21]
+	transMrg = pd.concat(transArr, ignore_index=True)
 
 
 	df_ntc10 = pd.DataFrame({'rid':[numtc10.index[i][0] for i in range(0,len(numtc10))],'sic':[numtc10.index[i][1] for i in range(0,len(numtc10))],'ntc10':[numtc10[j] for j in range(0,len(numtc10))]})
@@ -203,25 +157,63 @@ def dfTrans(datTrans, retrn, tc):
 	df_return = dfMergeRet[['rid','sic','nreturn','amtreturn']]
 	df_ntc17 = pd.DataFrame({'rid':[numtc17.index[i][0] for i in range(0,len(numtc17))],'sic':[numtc17.index[i][1] for i in range(0,len(numtc17))],'ntc17':[numtc17[j] for j in range(0,len(numtc17))]})
 
+	
+
 	df1 = pd.merge(df_ntc10,df_amttc10,how='outer',on=['rid','sic'])
 	df2 = pd.merge(df1,df_ntc13,how='outer',on=['rid','sic'])
 	df3 = pd.merge(df2,df_amttc13,how='outer',on=['rid','sic'])
 	df4 = pd.merge(df3,df_ncashb,how='outer',on=['rid','sic'])
 	df5 = pd.merge(df4,df_amtcashb,how='outer',on=['rid','sic'])
 	df6 = pd.merge(df5,df_return,how='outer',on=['rid','sic'])
-	dfAll = pd.merge(df6,df_ntc17,how='outer',on=['rid','sic'])
+	dfTrans = pd.merge(df6,df_ntc17,how='outer',on=['rid','sic'])
 
-	return dfAll
+	dfTrans['ntc10']=dfTrans['ntc10'].fillna(0)
+	dfTrans['amttc10']=dfTrans['amttc10'].fillna(0)
+	dfTrans['ntc13']=dfTrans['ntc13'].fillna(0)
+	dfTrans['amttc13']=dfTrans['amttc13'].fillna(0)
+	dfTrans['ncashb']=dfTrans['ncashb'].fillna(0)
+	dfTrans['amtcashb']=dfTrans['amtcashb'].fillna(0)
+	dfTrans['nreturn']=dfTrans['nreturn'].fillna(0)
+	dfTrans['amtreturn']=dfTrans['amtreturn'].fillna(0)
+	dfTrans['ntc17']=dfTrans['ntc17'].fillna(0)
+
+	arrTrans = [transMrg, dfTrans]
+
+	return arrTrans
 
 
-def fiidTrans(e):
+def computeReturn(transMrg):
+	
+	'''
+	DataFrame for computing total number and amount of merchandise returned
+	numreturn (n total return transaction)
+	sumreturn (monetary amount of return transaction)
+	retailers and customers are present in both data revenue and data return
+	retailer id data revenue = retailer id data return
+	customer id data revenue = customer id data return
+	'''
+	nrevGrp= transMrg.groupby(['strretailerid','sic','strcardno']).size()
+	nretGrp= retrn.groupby(['strretailerid','sic','strcardno']).size()
+	sretGrp= retrn.groupby(['strretailerid','sic','strcardno'])['famt'].sum()
+	nrevInd= nrevGrp.index
+	nretInd = nretGrp.index
+	sretInd = sretGrp.index
+	dfRev = pd.DataFrame({'rid':[nrevInd[i][0] for i in range(0,len(nrevGrp))],'sic':[nrevInd[i][1] for i in range(0,len(nrevGrp))],'cid':[nrevInd[i][2] for i in range(0,len(nrevGrp))]})
+	
+	dfRet1 = pd.DataFrame({'rid':[nretInd[i][0] for i in range(0,len(nretGrp))],'sic':[nretInd[i][1] for i in range(0,len(nretGrp))],'cid':[nretInd[i][2] for i in range(0,len(nretGrp))], 'nreturn':[nretGrp[j] for j in range(0,len(nretGrp))]})
+	dfRet2 = pd.DataFrame({'rid':[sretInd[i][0] for i in range(0,len(sretGrp))],'sic':[sretInd[i][1] for i in range(0,len(sretGrp))],'cid':[sretInd[i][2] for i in range(0,len(sretGrp))], 'amtreturn': [sretGrp[j] for j in range(0,len(sretGrp))] })
+	dfRet12 = pd.merge(dfRet1,dfRet2,how='outer',on=['rid','sic','cid'])
+	dfMergeRet = pd.merge(dfRev,dfRet12,how='inner',on=['rid','sic','cid'])
 
+	return dfMergeRet
+
+def computeFiid(transMrg):
 	'''
 	number and monetary value of transaction using different combination of acqfiid (i.e. ANZ or NONANZ), cardfiid (i.e. ANZ or NONANZ), and card type (i.e. credit or debit card)
 	'''
-	nFiidGrp = e.groupby(['strretailerid','sic','acqfiid','cardfiid','t']).size()
+	nFiidGrp = transMrg.groupby(['strretailerid','sic','acqfiid','cardfiid','t']).size()
 	nFiidInd = nFiidGrp.index
-	sFiidGrp = e.groupby(['strretailerid','sic','acqfiid','cardfiid','t'])['famt'].sum()
+	sFiidGrp = transMrg.groupby(['strretailerid','sic','acqfiid','cardfiid','t'])['famt'].sum()
 	sFiidInd = sFiidGrp.index
 	dfFiidNum = pd.DataFrame({'rid':[nFiidInd[i][0] for i in range(0,len(nFiidGrp))],'sic':[nFiidInd[i][1] for i in range(0,len(nFiidGrp))],'acqfiid':[nFiidInd[i][2] for i in range(0,len(nFiidGrp))],'cardfiid':[nFiidInd[i][3] for i in range(0,len(nFiidGrp))], 'cardtype':[nFiidInd[i][4] for i in range(0,len(nFiidGrp))], 'nfiid':[nFiidGrp[nFiidInd[j]] for j in range(0,len(nFiidGrp))]})
 
@@ -258,21 +250,33 @@ def fiidTrans(e):
 	dfb = pd.merge(dfa,fiid3,how='outer',on=['rid','sic'])
 	dfc = pd.merge(dfb,fiid4,how='outer',on=['rid','sic'])
 	dfd = pd.merge(dfc,fiid5,how='outer',on=['rid','sic'])
-	dfe = pd.merge(dfd,fiid6,how='outer',on=['rid','sic'])
+	dfFiidAll = pd.merge(dfd,fiid6,how='outer',on=['rid','sic'])
 
-	return dfe
+	dfFiidAll['nfiid1']=dfFiidAll['nfiid1'].fillna(0)
+	dfFiidAll['nfiid2']=dfFiidAll['nfiid2'].fillna(0)
+	dfFiidAll['nfiid3']=dfFiidAll['nfiid3'].fillna(0)
+	dfFiidAll['nfiid4']=dfFiidAll['nfiid4'].fillna(0)
+	dfFiidAll['nfiid5']=dfFiidAll['nfiid5'].fillna(0)
+	dfFiidAll['nfiid6']=dfFiidAll['nfiid6'].fillna(0)
+	dfFiidAll['amtfiid1']=dfFiidAll['amtfiid1'].fillna(0)
+	dfFiidAll['amtfiid2']=dfFiidAll['amtfiid2'].fillna(0)
+	dfFiidAll['amtfiid3']=dfFiidAll['amtfiid3'].fillna(0)
+	dfFiidAll['amtfiid4']=dfFiidAll['amtfiid4'].fillna(0)
+	dfFiidAll['amtfiid5']=dfFiidAll['amtfiid5'].fillna(0)
+	dfFiidAll['amtfiid6']=dfFiidAll['amtfiid6'].fillna(0)
 
 
+	return dfFiidAll
 
-def aggAll(e, df7, dfe):
+
+def computeRevenue(transMrg):
 
 	'''
 	max revenue
-	slope a day - order by time of day
 	time max revenue : morning, afternoon, night
 	'''
-	amtRev = e.groupby(['strretailerid','sic'])['famt'].sum()
-	ntrans = e.groupby(['strretailerid','sic']).size()
+	amtRev = transMrg.groupby(['strretailerid','sic'])['famt'].sum()
+	ntrans = transMrg.groupby(['strretailerid','sic']).size()
 
 	dfamtRev = pd.DataFrame({'rid':[amtRev.index[i][0] for i in range(0,len(amtRev))],'sic':[amtRev.index[i][1] for i in range(0,len(amtRev))], 'amtRev':[amtRev[j] for j in range(0,len(amtRev))]})
 	dfntrans = pd.DataFrame({'rid':[ntrans.index[i][0] for i in range(0,len(ntrans))],'sic':[ntrans.index[i][1] for i in range(0,len(ntrans))], 'ntrans':[ntrans[j] for j in range(0,len(ntrans))]})
@@ -282,45 +286,63 @@ def aggAll(e, df7, dfe):
 	dfMaxRev = pd.DataFrame({'rid':[maxRev.index[i][0] for i in range(0,len(maxRev))],'sic':[maxRev.index[i][1] for i in range(0,len(maxRev))],'maxRev':[maxRev[j] for j in range(0,len(maxRev))]})
 	dfMergeMaxRev = pd.merge(dfMaxRevDT,dfMaxRev,how='inner',on=['rid','sic','maxRev'])
 
-	mrg1 = pd.merge(df7,dfe,how='outer',on=['rid','sic'])
-	mrg2 = pd.merge(mrg1,dfamtRev,how='outer',on=['rid','sic'])
-	mrg3 = pd.merge(mrg2,dfntrans,how='outer',on=['rid','sic'])
-	dataprep = pd.merge(mrg3,dfMergeMaxRev,how='outer',on=['rid','sic'])
+
+	mrg = pd.merge(dfamtRev,dfntrans,how='outer',on=['rid','sic'])
+	dfRev = pd.merge(mrg3,dfMergeMaxRev,how='outer',on=['rid','sic'])
+	
+	dfRev['amtRev']=dfRev['amtRev'].fillna(0)
+	dfRev['ntrans']=dfRev['ntrans'].fillna(0)
+	dfRev['timeOfDay']=dfRev['timeOfDay'].fillna(0)
+	dfRev['maxRev']=dfRev['maxRev'].fillna(0)
+
+	return dfRev
+
+
+def computeDailySlope(datGrp):
+	
+	dfTmp = pd.DataFrame({'rid':[datGrp.index[m][0] for m in range(0,len(datGrp))],'sic':[datGrp.index[m][1] for m in range(0,len(datGrp))], 'dt':[datGrp['dt'][m] for m in range(0,len(datGrp))], 'famt':[datGrp['famt'][m] for m in range(0,len(datGrp))]})
+	dfTmpSorted = dfTmp.sort_index(by='dt', ascending=True)
+	dfTmpSorted['sorted']=[o for o in range(0,len(dfTmpSorted))]
+	x = dfTmpSorted['sorted']
+	y = dfTmpSorted['famt']
+	tmp1=[]
+	tmp2=[]
+	for p in range(0,len(x)):
+		tmp1.append(x[p])
+	for q in range(0,len(y)):
+		tmp2.append(y[q])
+
+	datX = np.array(tmp1)
+	datY = np.array(tmp2)
+
+	lm = LinearRegression()
+	lm.fit(datX[:,np.newaxis],datY)
+	intercept = lm.intercept_
+	slope = lm.coef_[0]
+	dfTheta = pd.DataFrame({'rid':(dfTmpSorted['rid'][0]),'sic':(dfTmpSorted['sic'][0]), 'intercept':[intercept], 'slope':[slope]})
 	
 
-	#slopeDat = getSlope(e)
-	#dfSlope = slopeDat[['rid', 'sic', 'slopeInfo']]
-	#dataprep = pd.merge(mrg4,dfSlope,how='outer',on=['rid','sic'])
-
-	dataprep['ntc10']=dataprep['ntc10'].fillna(0)
-	dataprep['amttc10']=dataprep['amttc10'].fillna(0)
-	dataprep['ntc13']=dataprep['ntc13'].fillna(0)
-	dataprep['amttc13']=dataprep['amttc13'].fillna(0)
-	dataprep['ncashb']=dataprep['ncashb'].fillna(0)
-	dataprep['amtcashb']=dataprep['amtcashb'].fillna(0)
-	dataprep['nreturn']=dataprep['nreturn'].fillna(0)
-	dataprep['amtreturn']=dataprep['amtreturn'].fillna(0)
-	dataprep['ntc17']=dataprep['ntc17'].fillna(0)
-
-	dataprep['nfiid1']=dataprep['nfiid1'].fillna(0)
-	dataprep['nfiid2']=dataprep['nfiid2'].fillna(0)
-	dataprep['nfiid3']=dataprep['nfiid3'].fillna(0)
-	dataprep['nfiid4']=dataprep['nfiid4'].fillna(0)
-	dataprep['nfiid5']=dataprep['nfiid5'].fillna(0)
-	dataprep['nfiid6']=dataprep['nfiid6'].fillna(0)
-	dataprep['amtfiid1']=dataprep['amtfiid1'].fillna(0)
-	dataprep['amtfiid2']=dataprep['amtfiid2'].fillna(0)
-	dataprep['amtfiid3']=dataprep['amtfiid3'].fillna(0)
-	dataprep['amtfiid4']=dataprep['amtfiid4'].fillna(0)
-	dataprep['amtfiid5']=dataprep['amtfiid5'].fillna(0)
-	dataprep['amtfiid6']=dataprep['amtfiid6'].fillna(0)
-
-	dataprep['amtRev']=dataprep['amtRev'].fillna(0)
-	dataprep['ntrans']=dataprep['ntrans'].fillna(0)
-	dataprep['timeOfDay']=dataprep['timeOfDay'].fillna(0)
-	dataprep['maxRev']=dataprep['maxRev'].fillna(0)
+	return dfTheta
 
 
+
+def aggAll(dfAll):
+
+	
+	'''
+	- dfTrans
+	- dfMergeRet
+	- dfFiidAll
+	- dfRev
+	- dfDailySlope
+	'''
+
+	agg1 = pd.merge(dfTrans,dfFiidAll,how='outer',on=['rid','sic'])
+	agg2 = pd.merge(agg1,dfMergeRet,how='outer',on=['rid','sic'])
+	agg3 = pd.merge(agg2,dfRev,how='outer',on=['rid','sic'])
+	dataprep = pd.merge(agg3,dfDailySlope,how='outer',on=['rid','sic'])
+
+	
 	return dataprep
 
 
