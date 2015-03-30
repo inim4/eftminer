@@ -4,6 +4,7 @@ import math
 import time
 import datetime
 from datetime import datetime
+from scipy.stats.mstats import mode
 from sklearn.linear_model import LinearRegression
 
 
@@ -154,7 +155,6 @@ def frameTrans(datTrans):
 	df_amttc13 = pd.DataFrame({'rid':[sumtc13.index[i][0] for i in range(0,len(sumtc13))],'sic':[sumtc13.index[i][1] for i in range(0,len(sumtc13))],'amttc13':[sumtc13[j] for j in range(0,len(sumtc13))]})
 	df_ncashb = pd.DataFrame({'rid':[numtccashb.index[i][0] for i in range(0,len(numtccashb))],'sic':[numtccashb.index[i][1] for i in range(0,len(numtccashb))],'ncashb':[numtccashb[j] for j in range(0,len(numtccashb))]})
 	df_amtcashb = pd.DataFrame({'rid':[sumtccashb.index[i][0] for i in range(0,len(sumtccashb))],'sic':[sumtccashb.index[i][1] for i in range(0,len(sumtccashb))],'amtcashb':[sumtccashb[j] for j in range(0,len(sumtccashb))]})
-	df_return = dfMergeRet[['rid','sic','nreturn','amtreturn']]
 	df_ntc17 = pd.DataFrame({'rid':[numtc17.index[i][0] for i in range(0,len(numtc17))],'sic':[numtc17.index[i][1] for i in range(0,len(numtc17))],'ntc17':[numtc17[j] for j in range(0,len(numtc17))]})
 
 	
@@ -204,8 +204,9 @@ def computeReturn(transMrg):
 	dfRet2 = pd.DataFrame({'rid':[sretInd[i][0] for i in range(0,len(sretGrp))],'sic':[sretInd[i][1] for i in range(0,len(sretGrp))],'cid':[sretInd[i][2] for i in range(0,len(sretGrp))], 'amtreturn': [sretGrp[j] for j in range(0,len(sretGrp))] })
 	dfRet12 = pd.merge(dfRet1,dfRet2,how='outer',on=['rid','sic','cid'])
 	dfMergeRet = pd.merge(dfRev,dfRet12,how='inner',on=['rid','sic','cid'])
+	df_return = dfMergeRet[['rid','sic','nreturn','amtreturn']]
 
-	return dfMergeRet
+	return df_return
 
 def computeFiid(transMrg):
 	'''
@@ -355,4 +356,137 @@ def aggAll(dfAll):
 	
 	return dataprep
 
+def sumData(dfDat):
 
+	# merge / sum transaction code and monetary values
+	ntc10 = dfDat.groupby(['rid','sic'])['ntc10'].sum()
+	amttc10 = dfDat.groupby(['rid','sic'])['amttc10'].sum()
+	ntc13 = dfDat.groupby(['rid','sic'])['ntc13'].sum()
+	amttc13 = dfDat.groupby(['rid','sic'])['amttc13'].sum()
+	ncashb = dfDat.groupby(['rid','sic'])['ncashb'].sum()
+	amtcashb = dfDat.groupby(['rid','sic'])['amtcashb'].sum()
+	nreturn = dfDat.groupby(['rid','sic'])['nreturn'].sum()
+	amtreturn = dfDat.groupby(['rid','sic'])['amtreturn'].sum()
+	ntc17 = dfDat.groupby(['rid','sic'])['ntc17'].sum()
+	amtRev = dfDat.groupby(['rid','sic'])['amtRev'].sum()
+	ntrans = dfDat.groupby(['rid','sic'])['ntrans'].sum()
+
+	# merge / sum fiid
+	nfiid1 = dfDat.groupby(['rid','sic'])['nfiid1'].sum()
+	amtfiid1 = dfDat.groupby(['rid','sic'])['amtfiid1'].sum()
+	nfiid2 = dfDat.groupby(['rid','sic'])['nfiid2'].sum()
+	amtfiid2 = dfDat.groupby(['rid','sic'])['amtfiid2'].sum()
+	nfiid3 = dfDat.groupby(['rid','sic'])['nfiid3'].sum()
+	amtfiid3 = dfDat.groupby(['rid','sic'])['amtfiid3'].sum()
+	nfiid4 = dfDat.groupby(['rid','sic'])['nfiid4'].sum()
+	amtfiid4 = dfDat.groupby(['rid','sic'])['amtfiid4'].sum()
+	nfiid5 = dfDat.groupby(['rid','sic'])['nfiid5'].sum()
+	amtfiid5 = dfDat.groupby(['rid','sic'])['amtfiid5'].sum()
+	nfiid6 = dfDat.groupby(['rid','sic'])['nfiid6'].sum()
+	amtfiid6 = dfDat.groupby(['rid','sic'])['amtfiid6'].sum()
+
+	# find the max revenue from daily max revenue
+	# and find daily slope from data with max (max revenue)
+	
+	maxRevDT = dfDat.groupby(['rid','sic', 'dt', 'slopeInfo', 'nWeek')['amtRev'].max()
+	dfMaxRevDT = pd.DataFrame({'rid':[maxRevDT.index[i][0] for i in range(0,len(maxRevDT))],'sic':[maxRevDT.index[i][1] for i in range(0,len(maxRevDT))], 'dt':[maxRevDT.index[i][2] for i in range(0,len(maxRevDT))], 'slopeInfo':[maxRevDT.index[i][3] for i in range(0,len(maxRevDT))],  'nWeek':[maxRevDT.index[i][4] for i in range(0,len(maxRevDT))], 'maxRev':[maxRevDT[j] for j in range(0,len(maxRevDT))]})
+	
+	maxRev = dfMaxRevDT.groupby(['rid','sic'])['maxRev'].max()
+	dfMaxRev = pd.DataFrame({'rid':[maxRev.index[i][0] for i in range(0,len(maxRev))],'sic':[maxRev.index[i][1] for i in range(0,len(maxRev))],'maxRev':[maxRev[j] for j in range(0,len(maxRev))]})
+	dfMergeMaxRev = pd.merge(dfMaxRevDT,dfMaxRev,how='inner',on=['rid','sic','maxRev'])
+
+	df_ntc10 = pd.DataFrame({'rid':[ntc10.index[i][0] for i in range(0,len(ntc10))],'sic':[ntc10.index[i][1] for i in range(0,len(ntc10))], 'ntc10':[ntc10[j] for j in range(0,len(ntc10))]})
+	df_amttc10 = pd.DataFrame({'rid':[amttc10.index[i][0] for i in range(0,len(amttc10))],'sic':[amttc10.index[i][1] for i in range(0,len(amttc10))], 'amttc10':[amttc10[j] for j in range(0,len(amttc10))]})
+	df_ntc13 = pd.DataFrame({'rid':[ntc13.index[i][0] for i in range(0,len(ntc13))],'sic':[ntc13.index[i][1] for i in range(0,len(ntc13))], 'ntc13':[ntc13[j] for j in range(0,len(ntc13))]})
+	df_amttc13 = pd.DataFrame({'rid':[amttc13.index[i][0] for i in range(0,len(amttc13))],'sic':[amttc13.index[i][1] for i in range(0,len(amttc13))], 'amttc13':[amttc13[j] for j in range(0,len(amttc13))]})
+	df_ncashb = pd.DataFrame({'rid':[ncashb.index[i][0] for i in range(0,len(ncashb))],'sic':[ncashb.index[i][1] for i in range(0,len(ncashb))], 'ncashb':[ncashb[j] for j in range(0,len(ncashb))]})
+	df_amtcashb = pd.DataFrame({'rid':[amtcashb.index[i][0] for i in range(0,len(amtcashb))],'sic':[amtcashb.index[i][1] for i in range(0,len(amtcashb))], 'amtcashb':[amtcashb[j] for j in range(0,len(amtcashb))]})
+	df_nreturn = pd.DataFrame({'rid':[nreturn.index[i][0] for i in range(0,len(nreturn))],'sic':[nreturn.index[i][1] for i in range(0,len(nreturn))], 'nreturn':[nreturn[j] for j in range(0,len(nreturn))]})
+	df_amtreturn = pd.DataFrame({'rid':[amtreturn.index[i][0] for i in range(0,len(amtreturn))],'sic':[amtreturn.index[i][1] for i in range(0,len(amtreturn))], 'amtreturn':[amtreturn[j] for j in range(0,len(amtreturn))]})
+	df_ntc17 = pd.DataFrame({'rid':[ntc17.index[i][0] for i in range(0,len(ntc17))],'sic':[ntc17.index[i][1] for i in range(0,len(ntc17))], 'ntc17':[ntc17[j] for j in range(0,len(ntc17))]})
+	df_amtrev = pd.DataFrame({'rid':[amtRev.index[i][0] for i in range(0,len(amtRev))],'sic':[amtRev.index[i][1] for i in range(0,len(amtRev))], 'amtRev':[amtRev[j] for j in range(0,len(amtRev))]})
+	df_ntrans = pd.DataFrame({'rid':[ntrans.index[i][0] for i in range(0,len(ntrans))],'sic':[ntrans.index[i][1] for i in range(0,len(ntrans))], 'ntrans':[ntrans[j] for j in range(0,len(ntrans))]})
+
+	df_nfiid1 = pd.DataFrame({'rid':[nfiid1.index[i][0] for i in range(0,len(nfiid1))],'sic':[nfiid1.index[i][1] for i in range(0,len(nfiid1))], 'nfiid1':[nfiid1[j] for j in range(0,len(nfiid1))]})
+	df_amtfiid1 = pd.DataFrame({'rid':[amtfiid1.index[i][0] for i in range(0,len(amtfiid1))],'sic':[amtfiid1.index[i][1] for i in range(0,len(amtfiid1))], 'amtfiid1':[amtfiid1[j] for j in range(0,len(amtfiid1))]})
+	df_nfiid2 = pd.DataFrame({'rid':[nfiid2.index[i][0] for i in range(0,len(nfiid2))],'sic':[nfiid2.index[i][1] for i in range(0,len(nfiid2))], 'nfiid2':[nfiid2[j] for j in range(0,len(nfiid2))]})
+	df_amtfiid2 = pd.DataFrame({'rid':[amtfiid2.index[i][0] for i in range(0,len(amtfiid2))],'sic':[amtfiid2.index[i][1] for i in range(0,len(amtfiid2))], 'amtfiid2':[amtfiid2[j] for j in range(0,len(amtfiid2))]})
+	df_nfiid3 = pd.DataFrame({'rid':[nfiid3.index[i][0] for i in range(0,len(nfiid3))],'sic':[nfiid3.index[i][1] for i in range(0,len(nfiid3))], 'nfiid3':[nfiid3[j] for j in range(0,len(nfiid3))]})
+	df_amtfiid3 = pd.DataFrame({'rid':[amtfiid3.index[i][0] for i in range(0,len(amtfiid3))],'sic':[amtfiid3.index[i][1] for i in range(0,len(amtfiid3))], 'amtfiid3':[amtfiid3[j] for j in range(0,len(amtfiid3))]})
+	df_nfiid4 = pd.DataFrame({'rid':[nfiid4.index[i][0] for i in range(0,len(nfiid4))],'sic':[nfiid4.index[i][1] for i in range(0,len(nfiid4))], 'nfiid4':[nfiid4[j] for j in range(0,len(nfiid4))]})
+	df_amtfiid4 = pd.DataFrame({'rid':[amtfiid4.index[i][0] for i in range(0,len(amtfiid4))],'sic':[amtfiid4.index[i][1] for i in range(0,len(amtfiid4))], 'amtfiid4':[amtfiid4[j] for j in range(0,len(amtfiid4))]})
+	df_nfiid5 = pd.DataFrame({'rid':[nfiid5.index[i][0] for i in range(0,len(nfiid5))],'sic':[nfiid5.index[i][1] for i in range(0,len(nfiid5))], 'nfiid5':[nfiid5[j] for j in range(0,len(nfiid5))]})
+	df_amtfiid5 = pd.DataFrame({'rid':[amtfiid5.index[i][0] for i in range(0,len(amtfiid5))],'sic':[amtfiid5.index[i][1] for i in range(0,len(amtfiid5))], 'amtfiid5':[amtfiid5[j] for j in range(0,len(amtfiid5))]})
+	df_nfiid6 = pd.DataFrame({'rid':[nfiid6.index[i][0] for i in range(0,len(nfiid6))],'sic':[nfiid6.index[i][1] for i in range(0,len(nfiid6))], 'nfiid6':[nfiid6[j] for j in range(0,len(nfiid6))]})
+	df_amtfiid6 = pd.DataFrame({'rid':[amtfiid6.index[i][0] for i in range(0,len(amtfiid6))],'sic':[amtfiid6.index[i][1] for i in range(0,len(amtfiid6))], 'amtfiid6':[amtfiid6[j] for j in range(0,len(amtfiid6))]})
+
+	df1 = pd.merge(df_ntc10,df_amttc10,how='outer',on=['rid','sic'])
+	df2 = pd.merge(df_ntc13,df_amttc13,how='outer',on=['rid','sic'])
+	df3 = pd.merge(df_ncashb,df_amtcashb,how='outer',on=['rid','sic'])
+	df4 = pd.merge(df_nreturn,df_amtreturn,how='outer',on=['rid','sic'])
+	df5 = pd.merge(df1,df2,how='outer',on=['rid','sic'])
+	df6 = pd.merge(df5,df3,how='outer',on=['rid','sic'])
+	df7 = pd.merge(df6,df4,how='outer',on=['rid','sic'])
+	df8 = pd.merge(df7,df_ntc17,how='outer',on=['rid','sic'])
+
+	df9 = pd.merge(df_nfiid1,df_amtfiid1,how='outer',on=['rid','sic'])
+	df10 = pd.merge(df_nfiid2,df_amtfiid2,how='outer',on=['rid','sic'])
+	df11 = pd.merge(df_nfiid3,df_amtfiid3,how='outer',on=['rid','sic'])
+	df12 = pd.merge(df_nfiid4,df_amtfiid4,how='outer',on=['rid','sic'])
+	df13 = pd.merge(df_nfiid5,df_amtfiid5,how='outer',on=['rid','sic'])
+	df14 = pd.merge(df_nfiid6,df_amtfiid6,how='outer',on=['rid','sic'])
+	df15 = pd.merge(df9,df10,how='outer',on=['rid','sic'])
+	df16 = pd.merge(df15,df11,how='outer',on=['rid','sic'])
+	df17 = pd.merge(df16,df12,how='outer',on=['rid','sic'])
+	df18 = pd.merge(df17,df13,how='outer',on=['rid','sic'])
+	df19 = pd.merge(df18,df14,how='outer',on=['rid','sic'])
+	
+	df20 = pd.merge(df8,df19,how='outer',on=['rid','sic'])
+	df21 = pd.merge(df20,df_amtrev,how='outer',on=['rid','sic'])
+	df22 = pd.merge(df21,df_ntrans,how='outer',on=['rid','sic'])
+	groupedDat = pd.merge(df22,dfMergeMaxRev,how='outer',on=['rid','sic'])
+
+	groupedDat['ntc10']=groupedDat['ntc10'].fillna(0)
+	groupedDat['amttc10']=groupedDat['amttc10'].fillna(0)
+	groupedDat['ntc13']=groupedDat['ntc13'].fillna(0)
+	groupedDat['amttc13']=groupedDat['amttc13'].fillna(0)
+	groupedDat['ncashb']=groupedDat['ncashb'].fillna(0)
+	groupedDat['amtcashb']=groupedDat['amtcashb'].fillna(0)
+	groupedDat['nreturn']=groupedDat['nreturn'].fillna(0)
+	groupedDat['amtreturn']=groupedDat['amtreturn'].fillna(0)
+	groupedDat['ntc17']=groupedDat['ntc17'].fillna(0)
+	
+	groupedDat['nfiid1']=groupedDat['nfiid1'].fillna(0)
+	groupedDat['nfiid2']=groupedDat['nfiid2'].fillna(0)
+	groupedDat['nfiid3']=groupedDat['nfiid3'].fillna(0)
+	dataprep['nfiid4']=groupedDat['nfiid4'].fillna(0)
+	groupedDat['nfiid5']=groupedDat['nfiid5'].fillna(0)
+	groupedDat['nfiid6']=groupedDat['nfiid6'].fillna(0)
+	groupedDat['amtfiid1']=groupedDat['amtfiid1'].fillna(0)
+	groupedDat['amtfiid2']=groupedDat['amtfiid2'].fillna(0)
+	groupedDat['amtfiid3']=groupedDat['amtfiid3'].fillna(0)
+	groupedDat['amtfiid4']=groupedDat['amtfiid4'].fillna(0)
+	groupedDat['amtfiid5']=groupedDat['amtfiid5'].fillna(0)
+	groupedDat['amtfiid6']=groupedDat['amtfiid6'].fillna(0)
+
+	groupedDat['amtRev']=groupedDat['amtRev'].fillna(0)
+	groupedDat['ntrans']=groupedDat['ntrans'].fillna(0)
+	
+
+	return sumDat
+
+
+def mergeWeekly(dfDat):
+
+	#merge daily data into weekly
+	dfOneWeek = pd.concat(dfDat, ignore_index=True)
+
+	#extract relevant attributes from weekly data: dt, time of day
+
+	#sum weekly transactions
+	#
+	sumOneWeek = sumData(dfOneWeek)
+
+	#get weekly slope
+
+	return dfWeekly
