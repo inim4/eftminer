@@ -18,7 +18,7 @@ def readData(fileDat):
 	return alldata
 
 
-def selectData(datparam, strdate):
+def selectData(datparam, strdate, nweek):
 
 
 	'''
@@ -43,6 +43,7 @@ def selectData(datparam, strdate):
 	- motion pictures				78
 	'''
 	datparam['strdate'] = strdate
+	datparam['nWeek'] = nweek
 	datparam['famt1'] = datparam['famt1'].astype(float)
 	datparam['famt2'] = datparam['famt2'].astype(float)
 	datparam['sic'] = [sic[:2] for sic in datparam['str_sic']]
@@ -281,53 +282,25 @@ def computeRevenue(transMrg):
 
 	dfamtRev = pd.DataFrame({'rid':[amtRev.index[i][0] for i in range(0,len(amtRev))],'sic':[amtRev.index[i][1] for i in range(0,len(amtRev))], 'amtRev':[amtRev[j] for j in range(0,len(amtRev))]})
 	dfntrans = pd.DataFrame({'rid':[ntrans.index[i][0] for i in range(0,len(ntrans))],'sic':[ntrans.index[i][1] for i in range(0,len(ntrans))], 'ntrans':[ntrans[j] for j in range(0,len(ntrans))]})
-	maxRevDT = e.groupby(['strretailerid','sic', 'dt', 'daytime'])['famt'].max()
-	dfMaxRevDT = pd.DataFrame({'rid':[maxRevDT.index[i][0] for i in range(0,len(maxRevDT))],'sic':[maxRevDT.index[i][1] for i in range(0,len(maxRevDT))], 'timeOfDay':[maxRevDT.index[i][2] for i in range(0,len(maxRevDT))],'maxRev':[maxRevDT[j] for j in range(0,len(maxRevDT))]})
+
+	#calculate daily max revenue
+	maxRevDT = transMrg.groupby(['strretailerid','sic', 'dt', 'daytime','nWeek'])['famt'].max()
+	dfMaxRevDT = pd.DataFrame({'rid':[maxRevDT.index[i][0] for i in range(0,len(maxRevDT))],'sic':[maxRevDT.index[i][1] for i in range(0,len(maxRevDT))], 'dt':[maxRevDT.index[i][2] for i in range(0,len(maxRevDT))], 'daytime':[maxRevDT.index[i][3] for i in range(0,len(maxRevDT))], 'nWeek':[maxRevDT.index[i][4] for i in range(0,len(maxRevDT))], 'maxRev':[maxRevDT[j] for j in range(0,len(maxRevDT))]})
 	maxRev = dfMaxRevDT.groupby(['rid','sic'])['maxRev'].max()
 	dfMaxRev = pd.DataFrame({'rid':[maxRev.index[i][0] for i in range(0,len(maxRev))],'sic':[maxRev.index[i][1] for i in range(0,len(maxRev))],'maxRev':[maxRev[j] for j in range(0,len(maxRev))]})
 	dfMergeMaxRev = pd.merge(dfMaxRevDT,dfMaxRev,how='inner',on=['rid','sic','maxRev'])
 
 
 	mrg = pd.merge(dfamtRev,dfntrans,how='outer',on=['rid','sic'])
-	dfRev = pd.merge(mrg3,dfMergeMaxRev,how='outer',on=['rid','sic'])
+	dfRev = pd.merge(mrg,dfMergeMaxRev,how='outer',on=['rid','sic'])
 	
 	dfRev['amtRev']=dfRev['amtRev'].fillna(0)
 	dfRev['ntrans']=dfRev['ntrans'].fillna(0)
-	dfRev['timeOfDay']=dfRev['timeOfDay'].fillna(0)
+	dfRev['daytime']=dfRev['daytime'].fillna(0)
 	dfRev['maxRev']=dfRev['maxRev'].fillna(0)
 
 	return dfRev
 
-
-def computeDailySlope(indexGrp, datGrp):
-
-	slopeDat = pd.DataFrame({'rid':[],'sic':[], 'intercept':[], 'slope':[]})
-	for i in range(0,len(indexGrp)):
-		tmpArr = datGrp.get_group(indexGrp)
-		tmpArr = tmpArr.set_index(['strretailerid','sic'])
-		dfTmp = pd.DataFrame({'rid':[tmpArr.index[m][0] for m in range(0,len(tmpArr))],'sic':[tmpArr.index[m][1] for m in range(0,len(tmpArr))], 'dt':[tmpArr['dt'][m] for m in range(0,len(tmpArr))], 'famt':[tmpArr['famt'][m] for m in range(0,len(tmpArr))]})
-		dfTmpSorted = dfTmp.sort_index(by='dt', ascending=True)
-		dfTmpSorted['sorted']=[o for o in range(0,len(dfTmpSorted))]
-		x = dfTmpSorted['sorted']
-		y = dfTmpSorted['famt']
-		tmp1=[]
-		tmp2=[]
-		for p in range(0,len(x)):
-			tmp1.append(x[p])
-		for q in range(0,len(y)):
-			tmp2.append(y[q])
-
-		datX = np.array(tmp1)
-		datY = np.array(tmp2)
-
-		lm = LinearRegression()
-		lm.fit(datX[:,np.newaxis],datY)
-		intercept = lm.intercept_
-		slope = lm.coef_[0]
-		dfTheta = pd.DataFrame({'rid':(dfTmpSorted['rid'][0]),'sic':(dfTmpSorted['sic'][0]), 'intercept':[intercept], 'slope':[slope]})
-		slopeDat = slopeDat.append(dfTheta, ignore_index=True)
-
-	return slopeDat
 
 
 
@@ -339,7 +312,6 @@ def aggAll(dfAll):
 	- dfMergeRet
 	- dfFiidAll
 	- dfRev
-	- dfDailySlope
 	'''
 	
 	dfTrans = dfAll[0]
@@ -350,9 +322,7 @@ def aggAll(dfAll):
 
 	agg1 = pd.merge(dfTrans,dfFiidAll,how='outer',on=['rid','sic'])
 	agg2 = pd.merge(agg1,dfMergeRet,how='outer',on=['rid','sic'])
-	agg3 = pd.merge(agg2,dfRev,how='outer',on=['rid','sic'])
-	dataprep = pd.merge(agg3,dfDailySlope,how='outer',on=['rid','sic'])
-
+	dataprep = pd.merge(agg2,dfRev,how='outer',on=['rid','sic'])
 	
 	return dataprep
 
@@ -385,15 +355,7 @@ def sumData(dfDat):
 	nfiid6 = dfDat.groupby(['rid','sic'])['nfiid6'].sum()
 	amtfiid6 = dfDat.groupby(['rid','sic'])['amtfiid6'].sum()
 
-	# find the max revenue from daily max revenue
-	# and find daily slope from data with max (max revenue)
 	
-	maxRevDT = dfDat.groupby(['rid','sic', 'dt', 'slopeInfo', 'nWeek')['amtRev'].max()
-	dfMaxRevDT = pd.DataFrame({'rid':[maxRevDT.index[i][0] for i in range(0,len(maxRevDT))],'sic':[maxRevDT.index[i][1] for i in range(0,len(maxRevDT))], 'dt':[maxRevDT.index[i][2] for i in range(0,len(maxRevDT))], 'slopeInfo':[maxRevDT.index[i][3] for i in range(0,len(maxRevDT))],  'nWeek':[maxRevDT.index[i][4] for i in range(0,len(maxRevDT))], 'maxRev':[maxRevDT[j] for j in range(0,len(maxRevDT))]})
-	
-	maxRev = dfMaxRevDT.groupby(['rid','sic'])['maxRev'].max()
-	dfMaxRev = pd.DataFrame({'rid':[maxRev.index[i][0] for i in range(0,len(maxRev))],'sic':[maxRev.index[i][1] for i in range(0,len(maxRev))],'maxRev':[maxRev[j] for j in range(0,len(maxRev))]})
-	dfMergeMaxRev = pd.merge(dfMaxRevDT,dfMaxRev,how='inner',on=['rid','sic','maxRev'])
 
 	df_ntc10 = pd.DataFrame({'rid':[ntc10.index[i][0] for i in range(0,len(ntc10))],'sic':[ntc10.index[i][1] for i in range(0,len(ntc10))], 'ntc10':[ntc10[j] for j in range(0,len(ntc10))]})
 	df_amttc10 = pd.DataFrame({'rid':[amttc10.index[i][0] for i in range(0,len(amttc10))],'sic':[amttc10.index[i][1] for i in range(0,len(amttc10))], 'amttc10':[amttc10[j] for j in range(0,len(amttc10))]})
@@ -443,8 +405,8 @@ def sumData(dfDat):
 	
 	df20 = pd.merge(df8,df19,how='outer',on=['rid','sic'])
 	df21 = pd.merge(df20,df_amtrev,how='outer',on=['rid','sic'])
-	df22 = pd.merge(df21,df_ntrans,how='outer',on=['rid','sic'])
-	groupedDat = pd.merge(df22,dfMergeMaxRev,how='outer',on=['rid','sic'])
+	groupedDat = pd.merge(df21,df_ntrans,how='outer',on=['rid','sic'])
+	
 
 	groupedDat['ntc10']=groupedDat['ntc10'].fillna(0)
 	groupedDat['amttc10']=groupedDat['amttc10'].fillna(0)
@@ -475,18 +437,254 @@ def sumData(dfDat):
 
 	return sumDat
 
+def mrgMaxRevenue(dfDat):
 
-def mergeWeekly(dfDat):
+	# find the max revenue, datetime, and day time when max revenue occurs
+	# function for weekly, fortnightly, and all 6w data calculation
+	
+	maxRevDT = dfDat.groupby(['rid','sic', 'dt', 'daytime', 'nWeek')['amtRev'].max()
+	dfMaxRevDT = pd.DataFrame({'rid':[maxRevDT.index[i][0] for i in range(0,len(maxRevDT))],'sic':[maxRevDT.index[i][1] for i in range(0,len(maxRevDT))], 'dt':[maxRevDT.index[i][2] for i in range(0,len(maxRevDT))], 'daytime':[maxRevDT.index[i][3] for i in range(0,len(maxRevDT))],  'nWeek':[maxRevDT.index[i][4] for i in range(0,len(maxRevDT))], 'maxRev':[maxRevDT[j] for j in range(0,len(maxRevDT))]})
+	
+	maxRev = dfMaxRevDT.groupby(['rid','sic'])['maxRev'].max()
+	dfMaxRev = pd.DataFrame({'rid':[maxRev.index[i][0] for i in range(0,len(maxRev))],'sic':[maxRev.index[i][1] for i in range(0,len(maxRev))],'maxRev':[maxRev[j] for j in range(0,len(maxRev))]})
+	dfMergeMaxRev = pd.merge(dfMaxRevDT,dfMaxRev,how='inner',on=['rid','sic','maxRev'])
 
-	#merge daily data into weekly
-	dfOneWeek = pd.concat(dfDat, ignore_index=True)
+	return dfMergeMaxRev
 
-	#extract relevant attributes from weekly data: dt, time of day
 
-	#sum weekly transactions
-	#
-	sumOneWeek = sumData(dfOneWeek)
+def getSlope(indexGrp, datGrp):
 
-	#get weekly slope
+	slopeDat = pd.DataFrame({'rid':[],'sic':[], 'intercept':[], 'slope':[]})
+	for i in range(0,len(indexGrp)):
+		tmpArr = datGrp.get_group(indexGrp)
+		tmpArr = tmpArr.set_index(['strretailerid','sic'])
+		dfTmp = pd.DataFrame({'rid':[tmpArr.index[m][0] for m in range(0,len(tmpArr))],'sic':[tmpArr.index[m][1] for m in range(0,len(tmpArr))], 'dt':[tmpArr['dt'][m] for m in range(0,len(tmpArr))], 'famt':[tmpArr['famt'][m] for m in range(0,len(tmpArr))]})
+		dfTmpSorted = dfTmp.sort_index(by='dt', ascending=True)
+		dfTmpSorted['sorted']=[o for o in range(0,len(dfTmpSorted))]
+		x = dfTmpSorted['sorted']
+		y = dfTmpSorted['famt']
+		tmp1=[]
+		tmp2=[]
+		for p in range(0,len(x)):
+			tmp1.append(x[p])
+		for q in range(0,len(y)):
+			tmp2.append(y[q])
 
-	return dfWeekly
+		datX = np.array(tmp1)
+		datY = np.array(tmp2)
+
+		lm = LinearRegression()
+		lm.fit(datX[:,np.newaxis],datY)
+		intercept = lm.intercept_
+		slope = lm.coef_[0]
+		dfTheta = pd.DataFrame({'rid':(dfTmpSorted['rid'][0]),'sic':(dfTmpSorted['sic'][0]), 'intercept':[intercept], 'slope':[slope]})
+		slopeDat = slopeDat.append(dfTheta, ignore_index=True)
+
+	slopeDat['gradient']=slopeDat['slope'].apply(lambda x:round(math.degrees(np.arctan(x)),2))
+	# slope positive = 1, slope negative = 2 
+	slopeDat['slopeInfo']=slopeDat['slope'].apply(lambda x: 1 if x > 0 else 2)
+
+	return slopeDat
+
+
+def getModeTime(dfDat):
+	
+	# find the most frequent time of day and datetime when max revenue occurs
+	# from all merged 6W data       
+	datTimeOfDay = dfDat[['rid', 'sic', 'daytime']]
+	# mode of timeOfDay for every rid+sic key
+	grpTimeOfDay = datTimeOfDay.groupby(['rid','sic'])
+	arrName=[]
+	tmpArr=[]
+	modeTime = 0
+	dfModeTime = pd.DataFrame({'rid':[],'sic':[], 'timeMaxRev':[]})
+	for name, group in grpTimeOfDay:
+		arrName.append(name)
+	for j in range(len(arrName)):
+		tmpArr = grpTimeOfDay.get_group(arrName[j])
+		tmpArr = tmpArr.set_index(['rid', 'sic'])
+		modeTmp = mode(tmpArr['daytime'])
+		modeTime = modeTmp[0][0]
+		dfTimeOfDay = pd.DataFrame({'rid':(tmpArr.index[0][0]),'sic':(tmpArr.index[0][1]), 'timeMaxRev':(modeTime)})
+		dfModeTime = dfModeTime.append(dfTimeOfDay, ignore_index=True)
+
+	return dfModeTime
+
+def getModeWeek(dfDat):
+	
+	# find the most frequent week when max revenue occurs : 1 = week 1; 2 = week 2
+	# from all merged 6w data
+	dfDat['week'] = np.where((dfDat['nWeek']%2==0),2,1)
+	datWeek = dfDat[['rid', 'sic', 'week']]
+	# mode of timeOfDay for every rid+sic key
+	grpWeekRev = datWeek.groupby(['rid','sic'])
+	arrName=[]
+	tmpArr=[]
+	modeWeek = 0
+	dfModeWeek = pd.DataFrame({'rid':[],'sic':[], 'weekMaxRev':[]})
+	for name, group in grpWeekRev:
+		arrName.append(name)
+	for j in range(len(arrName)):
+		tmpArr = grpWeekRev.get_group(arrName[j])
+		tmpArr = tmpArr.set_index(['rid', 'sic'])
+		modeTmp = mode(tmpArr['week'])
+		modeWeek = modeTmp[0][0]
+		dfWeek = pd.DataFrame({'rid':(tmpArr.index[0][0]),'sic':(tmpArr.index[0][1]), 'weekMaxRev':(modeWeek)})
+		dfModeWeek = dfModeWeek.append(dfWeek, ignore_index=True)
+
+	return dfModeWeek
+
+
+def getInitCont(dfDat):
+
+	# get initial contribution (only first fortnightly revenue of training data)
+	dfRev = dfDat[['rid','sic', 'amtRev', 'nWeek']]
+	# initial contribution is the sum of fortnight revenue in the first two week of observed data
+	amtRev = dfRev.groupby(['rid','sic'])['amtRev'].sum()
+	dfInitCont = pd.DataFrame({'rid':[amtRev.index[i][0] for i in range(0,len(amtRev))],'sic':[amtRev.index[i][1] for i in range(0,len(amtRev))], 'initCont':[amtRev[j] for j in range(0,len(amtRev))]})
+
+	
+	return dfInitCont
+
+def getContRatio(dfDat):
+	
+	# get first week and second week contribution within first fortnight data
+	dfGrp = pd.DataFrame({'rid':[],'sic':[], 'contRatio':[]})
+	revGrp = dfRev.groupby(['rid','sic'])
+	arrName=[]
+	tmpArr=[]
+	fCont = 0
+	lCont = 0
+	contRatio = 0
+	for name, group in revGrp:
+		arrName.append(name)
+	for j in range(len(arrName)):
+		tmpArr = revGrp.get_group(arrName[j])
+		tmpArr = tmpArr.sort_index(by='nWeek', ascending=True)
+		tmpArr = tmpArr.set_index(['rid','sic'])
+		# get value of fCont and lCont from first and second week of revenue
+
+		if len(tmpArr)==2:
+			fCont = tmpArr['amtRev'][0]
+			lCont = tmpArr['amtRev'][1]
+			tmpCont = fCont/lCont
+
+			if tmpCont > 1:
+				contRatio = 3
+			else:
+				contRatio = 4
+
+			dfTmp = pd.DataFrame({'rid':(tmpArr.index[0][0]),'sic':(tmpArr.index[0][1]), 'contRatio':(contRatio)})
+			dfGrp = dfGrp.append(dfTmp, ignore_index=True)
+		# if retailer data (rid, sic) only appears in one week
+		else:
+			if tmpArr['nWeek'][0]==1:
+				fCont = tmpArr['amtRev'][0]
+				lCont = 0
+				contRatio = 1
+			else:
+				fCont = 0
+				lCont = tmpArr['amtRev'][0]
+				contRatio = 2
+			dfTmp = pd.DataFrame({'rid':(tmpArr.index[0][0]),'sic':(tmpArr.index[0][1]), 'contRatio':(contRatio)})
+			dfGrp = dfGrp.append(dfTmp, ignore_index=True)
+	
+	# merge two dataframes
+	dfCont = pd.merge(dfInitCont,dfGrp,how='inner',on=['rid','sic'])
+
+	return
+
+def getChangePoint(dfFortnight):
+
+	
+	#change point
+	changePoint = 0 
+	nWeek = 0
+	dfFortnight = dfFortnight.sort_index(by='nWeek', ascending = True)
+	dfChangePoint = pd.DataFrame({'rid':[],'sic':[],'changePoint':[], 'nWeek':[]})
+	
+	if len(dfFortnight)==2:
+		nWeek = dfFortnight['nWeek'][1]
+		# rise - fall
+		if ((dfFortnight['slopeInfo'][0] == 1) & (dfFortnight['slopeInfo'][1] == 2)):
+			changePoint = 1
+		# fall - rise
+		elif ((dfFortnight['slopeInfo'][0] == 2) & (dfFortnight['slopeInfo'][1] == 1)):
+			changePoint = 2
+		# rise - rise
+		elif ((dfFortnight['slopeInfo'][0] == 1) & (dfFortnight['slopeInfo'][1] == 1)):
+			changePoint = 3
+		# fall - fall 
+		elif ((dfFortnight['slopeInfo'][0] == 2) & (dfFortnight['slopeInfo'][1] == 2)):
+			changePoint = 4
+
+	# if retailer data only appears once within fortnight data
+	else:
+		nWeek = dfFortnight['nWeek'][0]
+		# if it only appears in week 1
+		# rise - flat
+		if ((dfFortnight['nWeek'][0] == 1) & (dfFortnight['slopeInfo'][1] == 1)):
+			changePoint = 5
+		# fall - flat
+		elif ((dfFortnight['nWeek'][0] == 1) & (dfFortnight['slopeInfo'][1] == 2)):
+			changePoint = 6
+		
+		# if it only appears in week 2
+		# flat - rise
+		elif ((dfFortnight['nWeek'][0] == 2) & (dfFortnight['slopeInfo'][1] == 1)):
+			changePoint = 7
+		# flat - fall
+		elif ((dfFortnight['nWeek'][0] == 2) & (dfFortnight['slopeInfo'][1] == 2)):
+			changePoint = 8
+			
+	df = pd.DataFrame({'rid':(dfFortnight['rid'][0]),'sic':(dfFortnight['sic'][0]), 'changePoint': changePoint, 'nWeek': nWeek})
+	dfChangePoint = dfChangePoint.append(df, ignore_index = True)
+
+
+	return dfChangePoint
+
+def combineChangePoint(df2WChangePoint, df2WSlope):
+
+	# combination of two weeks slope and change points --> to generate mode of combination
+	dfMrg = pd.merge(df2WChangePoint,df2WSlope, on=['rid','sic','nWeek'])
+	dfMrg['combineSlope']=np.where((dfMrg['slopeInfo'] == '1'),(dfMrg['changePoint']),(dfMrg['changePoint']+8)) 
+
+	tmp = dfMrg[['rid', 'sic', 'combineSlope']]
+	# mode of combination
+	dfCombine = tmp.groupby(['rid','sic'])
+	arrName=[]
+	tmpArr=[]
+	modeComb = 0
+	dfModeCP = pd.DataFrame({'rid':[],'sic':[], 'combineSlope':[]})
+	for name, group in dfCombine:
+		arrName.append(name)
+	for j in range(len(arrName)):
+		tmpArr = dfCombine.get_group(arrName[j])
+		tmpArr = tmpArr.set_index(['rid', 'sic'])
+		modeTmp = mode(tmpArr['combineSlope'])
+		modeCP = modeTmp[0][0]
+		dfCP = pd.DataFrame({'rid':(tmpArr.index[0][0]),'sic':(tmpArr.index[0][1]), 'combineSlope':(modeCP)})
+		dfModeCP = dfModeCP.append(dfCP, ignore_index=True)
+
+	return dfModeCP
+
+
+
+def mergeFortnightly(dfDat):
+
+	#get fortnightly slope
+	df2WSlope = getSlope()
+
+
+	return dfFortnightly
+
+def mergeAll(dfDat):
+
+	#aggregate cumulative data
+
+	#get 6w slope from all merged 6w data
+	getSlope()
+	dfTimeMaxRev = getModeTime()
+	dfWeekMaxRev = getModeWeek()
+
+	return dfAll
