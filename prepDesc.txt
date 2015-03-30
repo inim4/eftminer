@@ -1,0 +1,115 @@
+# Pre-processing
+1.Read raw data
+* if data >= 2G read in chunks (splits file into 3 sub-files)
+* resulting attributes / dataframes' columns: 
+	strretailerid - unique id of retailer;	
+	str_time - time variable;	
+	str_sic - 4 digits sic code;	
+	stracqfiid - machine FIID;	
+	strcardfiid - customer card FIID;	
+	strcardno - customer unique card no;	
+	strtrancde - full transaction code consisting 4 sub-codes;	
+	famt1 - monetary amount 1;	
+	famt2 - monetary amount 2;	
+	tc - code of transaction type;	
+	t - code of card type, debit or credit;	
+	aa - code of transaction account, savings, credits;	
+	c - code of transaction category;
+
+2. Preprocess data
+resulting attributes / dataframes' columns: 
+	rid - unique id of retailer;
+	sic - 2 digits sic code;	
+	ntc10 - count of normal transaction
+	ntc13 - count of mail/online order transaction
+	ncashb - count of transaction with cash back
+	nreturn - count of 'merchandise return' transaction
+	ntc17 - count of 'balance inquiry' transaction
+	amttc10 - monetary amount of ntc10
+	amttc13 - monetary amount of ntc13
+	amtcashb - monetary amount of ncashb
+	amtreturn - monetary amount of nreturn 
+	nfiid1 - acqfiid = ANZ, cardfiid = ANZ, credit card
+	nfiid2 - acqfiid = ANZ, cardfiid = ANZ, debit card
+	nfiid3 - acqfiid = ANZ, cardfiid = NONANZ, credit card
+	nfiid4 - acqfiid = ANZ, cardfiid = NONANZ, debit card
+	nfiid5 - acqfiid = NONANZ, cardfiid = ANZ, credit card
+	nfiid6 - acqfiid = NONANZ, cardfiid = ANZ, debit card
+	amtfiid1 - monetary amount of nfiid1
+	amtfiid2 - monetary amount of nfiid2
+	amtfiid3 - monetary amount of nfiid3
+	amtfiid4 - monetary amount of nfiid4
+	amtfiid5 - monetary amount of nfiid5
+	amtfiid6 - monetary amount of nfiid6
+	ntrans
+	amtRev
+	timeOfDay
+	maxRev
+	daySlopeInfo
+	dt
+
+3. Further preprocessing and merging data
+a.merge daily data into weekly
+	resulting two type of dataframes
+	1. get weekly slope
+	2. get aggregated / summarized of daily data in one week
+b. merge daily data into fortnightly → to get fortnightly slope
+c. merge weekly data into fortnightly
+	1. get aggregated / summarized of weekly data fortnightly (from a.2)
+	2. get changePoint attribute (from a.1)
+d. merge fortnightly data into all 6 W data
+	- get aggregated / summarized of weekly data fortnightly (from c.1)
+e. merge daily data into all 6 w data → to get overall slope and mode-type attributes 
+	1. overall slope
+	2. mode of timeOfDay
+	3. mode of combination of changePoint (from c.2) and fortnight slope (from b)
+	4. computing mean of revenue (amtRev/ntrans)
+	5. mode of dailySlope
+f. normalisation → normalising mean and max revenue attribute
+g. merge all dataframes
+resulting attributes
+	rid - unique id of retailer;
+	sic - 2 digits sic code;	
+	ntc10 - count of normal transaction
+	ntc13 - count of mail/online order transaction
+	ncashb - count of transaction with cash back
+	nreturn - count of 'merchandise return' transaction
+	ntc17 - count of 'balance inquiry' transaction
+	amttc10 - monetary amount of ntc10
+	amttc13 - monetary amount of ntc13
+	amtcashb - monetary amount of ncashb
+	amtreturn - monetary amount of nreturn 
+	nfiid1 - acqfiid = ANZ, cardfiid = ANZ, credit card
+	nfiid2 - acqfiid = ANZ, cardfiid = ANZ, debit card
+	nfiid3 - acqfiid = ANZ, cardfiid = NONANZ, credit card
+	nfiid4 - acqfiid = ANZ, cardfiid = NONANZ, debit card
+	nfiid5 - acqfiid = NONANZ, cardfiid = ANZ, credit card
+	nfiid6 - acqfiid = NONANZ, cardfiid = ANZ, debit card
+	amtfiid1 - monetary amount of nfiid1
+	amtfiid2 - monetary amount of nfiid2
+	amtfiid3 - monetary amount of nfiid3
+	amtfiid4 - monetary amount of nfiid4
+	amtfiid5 - monetary amount of nfiid5
+	amtfiid6 - monetary amount of nfiid6
+	timeMaxRev - mode of time of day when max revenue occurs, within 6 W data
+	weekMaxRev- mode of week when max revenue occurs, within 6 W data
+
+	initCont
+	contRatio
+	normMaxRev
+	normMeanRev
+	changePoint
+
+	slope6W
+	intercept6W
+	gradient6W
+
+# Getting slope:
+
+1. Weekly slope
+
+2. Change point
+
+3. Fortnightly slope
+
+4. all data slope
