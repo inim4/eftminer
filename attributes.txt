@@ -1,0 +1,59 @@
+Attributes
+==========
+Created Sunday 01 February 2015
+Updated Friday 20 February 2015
+
+1. ntc10 - count of normal transaction
+2. ntc13 - count of mail/online order transaction
+3. ncashb - count of transaction with cash back
+4. nreturn - count of 'merchandise return' transaction
+5. ntc17 - count of 'balance inquiry' transaction
+6. amttc10 - monetary amount of ntc10
+7. amttc13 - monetary amount of ntc13
+8. amtcashb - monetary amount of ncashb
+9. amtreturn - monetary amount of nreturn 
+
+10. nfiid1 - acqfiid = ANZ, cardfiid = ANZ, credit card
+11. nfiid2 - acqfiid = ANZ, cardfiid = ANZ, debit card
+12. nfiid3 - acqfiid = ANZ, cardfiid = NONANZ, credit card
+13. nfiid4 - acqfiid = ANZ, cardfiid = NONANZ, debit card
+14. nfiid5 - acqfiid = NONANZ, cardfiid = ANZ, credit card
+15. nfiid6 - acqfiid = NONANZ, cardfiid = ANZ, debit card
+16. amtfiid1 - monetary amount of nfiid1
+17. amtfiid2 - monetary amount of nfiid2
+18. amtfiid3 - monetary amount of nfiid3
+19. amtfiid4 - monetary amount of nfiid4
+20. amtfiid5 - monetary amount of nfiid5
+21. amtfiid6 - monetary amount of nfiid6
+
+22. initCont - contribution (total revenue) in the first two weeks
+23. fCont - first week revenue contribution  → from first two weeks of training data (initCont)
+24. lCont - second week revenue contribution → from first two weeks of training data (initCont)
+	
+	* the idea for using attributes fCont and lCont : Because each retailer has different characteristics based on their line businesses. For instance, food store retailers may have greater revenue contribution within first week of payment day (not necessary) as compared to other type of retailers
+
+25. normMeanRev - normalized mean revenue (sum of amtrev / ntrans) 
+26. normMaxRev - normalized max revenue
+
+27. timeMaxRev - most frequent time of day when max revenue occurs (1=morning, 2=noon, 3=evening)
+28. weekMaxRev - most frequent week when max revenue occurs (1= 1st week, 2= 2nd week)
+	
+	* The proposed attribute (i.e. dateTimeMaxRev or datetime when maximum revenue occurs) does not feel meaningful to be applied to networks (my personal opinion), so I used the other type of timing attributes as below:
+
+	* Attribute timeMaxRev - does not feel so powerful, in my opinion. Because the daily pattern of revenue is already represented by dailySlope attribute. I was thinking to get rid of it, if you also think so. 
+	
+	* Attribute weekMaxRev is assumed to have connection with attribute contribution (i.e. initCont, fCont, lCont) and changePoint. For instance, if some retailers have maximum revenue in the first week after payday, does total contribution in that week also great? or, does slope in that week rise? or does maximum revenue occur immediately after payment day (1st week) or the week later (2nd week) ?
+
+29. dailySlope - daily slope info (transaction per microseconds) based on datetime when max revenue occurs within 41 days of training data : 1 = positive slope; 2 = negative slope
+
+30. fortnightSlope - slope within two weeks (1 = positive slope; 2 = negative slope )
+
+31. changePoint - the most frequent change of slopes fortnightly (1 = positive slope to negative slope; 2 = negative slope to positive slope; 3 = positive to positive slope; 4 = negative to negative slope)
+../../log_notes/change_points1.png
+../../log_notes/change_points2.png
+
+32. slopeInfo - either slope is positif (1) or negative (2) from all daily data (41 data-files)
+33. slopeGradient -  gradient of slope (numeric in degrees metric, will be discretized into 2; smaller gradient & greater gradient) from all daily data (41 data-files)
+34. intercept - intercept of slope (numeric, will be discretized into 2; smaller & greater intercept) from all daily data (41 data-files)
+
+* variable Slopes are calculated using simple linear regression with gradient descent and single variable  (i.e. daily amtRev - daily sum of monetary amount of revenue), 
