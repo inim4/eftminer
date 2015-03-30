@@ -547,10 +547,10 @@ def getInitCont(dfDat):
 	return dfInitCont
 
 def getContRatio(dfDat):
-	
+
 	# get first week and second week contribution within first fortnight data
 	dfGrp = pd.DataFrame({'rid':[],'sic':[], 'contRatio':[]})
-	revGrp = dfRev.groupby(['rid','sic'])
+	revGrp = dfDat.groupby(['rid','sic'])
 	arrName=[]
 	tmpArr=[]
 	fCont = 0
@@ -562,8 +562,8 @@ def getContRatio(dfDat):
 		tmpArr = revGrp.get_group(arrName[j])
 		tmpArr = tmpArr.sort_index(by='nWeek', ascending=True)
 		tmpArr = tmpArr.set_index(['rid','sic'])
-		# get value of fCont and lCont from first and second week of revenue
 
+		# get value of fCont and lCont from first and second week of revenue
 		if len(tmpArr)==2:
 			fCont = tmpArr['amtRev'][0]
 			lCont = tmpArr['amtRev'][1]
@@ -576,6 +576,7 @@ def getContRatio(dfDat):
 
 			dfTmp = pd.DataFrame({'rid':(tmpArr.index[0][0]),'sic':(tmpArr.index[0][1]), 'contRatio':(contRatio)})
 			dfGrp = dfGrp.append(dfTmp, ignore_index=True)
+
 		# if retailer data (rid, sic) only appears in one week
 		else:
 			if tmpArr['nWeek'][0]==1:
@@ -588,11 +589,9 @@ def getContRatio(dfDat):
 				contRatio = 2
 			dfTmp = pd.DataFrame({'rid':(tmpArr.index[0][0]),'sic':(tmpArr.index[0][1]), 'contRatio':(contRatio)})
 			dfGrp = dfGrp.append(dfTmp, ignore_index=True)
-	
-	# merge two dataframes
-	dfCont = pd.merge(dfInitCont,dfGrp,how='inner',on=['rid','sic'])
 
-	return
+
+	return dfGrp
 
 def getChangePoint(dfFortnight):
 
