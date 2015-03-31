@@ -566,12 +566,11 @@ def getContRatio(dfDat):
 
 	return dfContRatio
 
-def getChangePoint(dfFortnight):
+def getChangePoint(dfSlope):
 	
 	dfChangePoint = pd.DataFrame({'rid':[],'sic':[],'changePoint':[], 'nWeek':[]})
 	#change point of fortnight slope
-	dfDat['week'] = np.where((dfDat['nWeek']%2==0),2,1)
-	retailerGrp = dfFortnight.groupby(['rid','sic'])
+	retailerGrp = dfSlope.groupby(['rid','sic'])
 	arrName=[]
 	dfFortnight=[]
 	changePoint = 0 
@@ -627,12 +626,28 @@ def getChangePoint(dfFortnight):
 def combineChangePoint(df2WChangePoint, df2WSlope):
 
 	# combination of two weeks slope and change points --> to generate mode of combination
-	dfMrg = pd.merge(df2WChangePoint,df2WSlope, on=['rid','sic','nWeek'])
-	dfMrg['combineSlope']=np.where((dfMrg['slopeInfo'] == '1'),(dfMrg['changePoint']),(dfMrg['changePoint']+8)) 
+	dfMrg = pd.merge(df2WChangePoint,df2WSlope, on=['rid','sic'])
+	dfMrg['combineSlope']=np.where((dfMrg['slopeInfo'] == 1),(dfMrg['changePoint']),(dfMrg['changePoint']+8)) 
+	grp1=[2,3,5,7]
+	grp2=[9,12,14,16]
+	grp3=[1,4,6,8]
+	grp4=[10,11,13,15]
+	combine1 = dfMrg[dfMrg['combineSlope'].isin(grp1)]
+	combine2 = dfMrg[dfMrg['combineSlope'].isin(grp2)]
+	combine3 = dfMrg[dfMrg['combineSlope'].isin(grp3)]
+	combine4 = dfMrg[dfMrg['combineSlope'].isin(grp4)]
+	combine1['grpCombineSlope'] = 1 
+	combine2['grpCombineSlope'] = 2
+	combine3['grpCombineSlope'] = 3
+	combine4['grpCombineSlope'] = 4
+	dfCombineCP = dfMrg[['rid', 'sic', 'grpCombineSlope']]
 
-	tmp = dfMrg[['rid', 'sic', 'combineSlope']]
+	return dfCombineCP
+
+def getModeCombineCP(dfCombineCP):
+	
 	# mode of combination
-	dfCombine = tmp.groupby(['rid','sic'])
+	dfCombine = dfCombineCP.groupby(['rid','sic'])
 	arrName=[]
 	tmpArr=[]
 	modeComb = 0
@@ -647,7 +662,8 @@ def combineChangePoint(df2WChangePoint, df2WSlope):
 		dfCP = pd.DataFrame({'rid':(tmpArr.index[0][0]),'sic':(tmpArr.index[0][1]), 'combineSlope':(modeCP)})
 		dfModeCP = dfModeCP.append(dfCP, ignore_index=True)
 
-	return dfModeCP
+	return 
+
 
 def mergeFortnightly(dfDat):
 

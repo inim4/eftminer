@@ -14,7 +14,7 @@ names = [fileName % {'i':i} for i in range(1,8)]
 strDate = '2013-09-%(j)02d' 
 dates = [strDate %{'j':j} for j in range(5,12)]
 
-datList = []
+datList1 = []
 for k in range(len(names)):
 	dat = readData(names[k])
 	slc = selectData(dat,dates[k],k+1)
@@ -33,6 +33,6 @@ for k in range(len(names)):
 	dataprep = aggAll(pieces)
 			
 
-	datList.append(dataprep)
+	datList1.append(dataprep)
 
 

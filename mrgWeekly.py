@@ -16,11 +16,11 @@ weekList=[]
 dailyList=[]
 
 datName = 'datList%(i)02d'
-names = [datName % {'i':i} for i in range(1,8)]
+arrDaily = [datName % {'i':i} for i in range(1,8)]
 
-for j in range(len(names)):
+for j in range(len(arrDaily)):
 	#merge daily data into weekly
-	dfOneWeek = pd.concat(names[j], ignore_index=True)
+	dfOneWeek = pd.concat(arrDaily[j], ignore_index=True)
 	#aggregated attributes. dt, daytime, and max revenue
 	dfWeekly = sumData(dfOneWeek)
 
@@ -77,6 +77,7 @@ for j in range(len(names)):
 
 	arrSlope = [dfTheta1,dfTheta2,dfTheta3,dfTheta4,dfTheta5,dfTheta6,dfTheta7,dfTheta8,dfTheta9,dfTheta10]
 	dfSlope = pd.concat(arrSlope, ignore_index=True)
+	dfWeeklySlope = dfSlope[['rid','sic','slopeInfo']]
 
 	#merge aggregated data frame and slope data
 	dfWeekly = pd.merge(dfWeekly,dfSlope,how='outer',on=['rid','sic'])
