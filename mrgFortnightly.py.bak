@@ -30,7 +30,7 @@ for i in range(len(arrFortnight)):
 	dfContRatio = getContRatio(datCont)
 
 	#get change point of weekly slope within fortnightly dataset
-	dfChangePoint = getChangePoint(datSlope)
+	getChangePoint(datSlope)
 
 	#aggregated fortnightly data 	
 	df2w = sumData(dat2w)

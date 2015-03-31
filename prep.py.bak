@@ -570,13 +570,12 @@ def getChangePoint(dfFortnight):
 	
 	dfChangePoint = pd.DataFrame({'rid':[],'sic':[],'changePoint':[], 'nWeek':[]})
 	#change point of fortnight slope
-	dfDat['week'] = np.where((dfDat['nWeek']%2==0),2,1)
 	retailerGrp = dfFortnight.groupby(['rid','sic'])
 	arrName=[]
 	dfFortnight=[]
 	changePoint = 0 
 	nWeek = 0
-	
+
 	for name, group in retailerGrp:
 		arrName.append(name)
 
