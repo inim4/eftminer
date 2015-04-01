@@ -9,8 +9,14 @@ from timeit import default_timer as clock
 from sklearn.linear_model import LinearRegression
 from prep import *
 
-#array of weekly data
+#array of summarized weekly data per fortnight
 aggFortnightList=[]
+
+#array for combination of change point & 2w slope per fortnight
+arrCombineCP=[]
+
+#
+
 
 #array for fortnightly data
 arr1=[weekList[0],weekList[1]]
@@ -99,17 +105,11 @@ for i in range(len(arrFortnight)):
 
 	#combine 2w slope and change point
 	dfCombineCP = combineChangePoint(dfChangePoint,df2wSlope)
+	arrCombineCP.append(dfCombineCP)
 	
 	#aggregated fortnightly data 	
 	df2w = sumData(dat2w)
-
-	#merge all
-	mrg1 = pd.merge(dfCont,dfContRatio,how='outer',on=['rid','sic'])
-	mrg2 = pd.merge(mrg1,dfCombineCP,how='outer',on=['rid','sic'])
-	dfFortnightly = pd.merge(mrg2,df2w,how='outer',on=['rid','sic'])
-	dfFortnightly['slopeInfo']=dfFortnightly['slopeInfo'].fillna(0)
-
-	aggFortnightList.append(dfFortnightly)
+	aggFortnightList.append(df2w)
 
 	
 	

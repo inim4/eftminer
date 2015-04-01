@@ -3,7 +3,9 @@ Attributes
 Created Sunday 01 February 2015
 Updated Friday 20 February 2015
 
-1. ntc10 - count of normal transaction
+1. avgtc10
+is computed from:  
+ntc10 - count of normal transaction
 2. ntc13 - count of mail/online order transaction
 3. ncashb - count of transaction with cash back
 4. nreturn - count of 'merchandise return' transaction
@@ -27,8 +29,10 @@ Updated Friday 20 February 2015
 21. amtfiid6 - monetary amount of nfiid6
 
 22. initCont - contribution (total revenue) in the first two weeks
-23. fCont - first week revenue contribution  → from first two weeks of training data (initCont)
-24. lCont - second week revenue contribution → from first two weeks of training data (initCont)
+23. contRatio
+is computed from fCont/lCont
+fCont - first week revenue contribution  → from first two weeks of training data (initCont)
+lCont - second week revenue contribution → from first two weeks of training data (initCont)
 	
 	* the idea for using attributes fCont and lCont : Because each retailer has different characteristics based on their line businesses. For instance, food store retailers may have greater revenue contribution within first week of payment day (not necessary) as compared to other type of retailers
 
@@ -44,7 +48,7 @@ Updated Friday 20 February 2015
 	
 	* Attribute weekMaxRev is assumed to have connection with attribute contribution (i.e. initCont, fCont, lCont) and changePoint. For instance, if some retailers have maximum revenue in the first week after payday, does total contribution in that week also great? or, does slope in that week rise? or does maximum revenue occur immediately after payment day (1st week) or the week later (2nd week) ?
 
-29. dailySlope - daily slope info (transaction per microseconds) based on datetime when max revenue occurs within 41 days of training data : 1 = positive slope; 2 = negative slope
+
 
 30. fortnightSlope - slope within two weeks (1 = positive slope; 2 = negative slope )
 

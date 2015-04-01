@@ -662,7 +662,7 @@ def getModeCombineCP(dfCombineCP):
 		dfCP = pd.DataFrame({'rid':(tmpArr.index[0][0]),'sic':(tmpArr.index[0][1]), 'combineSlope':(modeCP)})
 		dfModeCP = dfModeCP.append(dfCP, ignore_index=True)
 
-	return 
+	return dfModeCP
 
 
 def mergeFortnightly(dfDat):

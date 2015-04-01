@@ -18,7 +18,20 @@ from prep import *
 - daily data in 6 W periode --> slope (intercept, gradient, slope info), mode of time of day
 '''
 
-#processing
-for i in range(aggFortnightList):
+#processing aggregated fortnightly data to summarize all 6w data
+dat6w = pd.concat(aggFortnightList, ignore_index=True)
+#aggregated fortnightly data 	
+df6w = sumData(dat6w)
+
+#processing fortnightly data
+datCombineCP = pd.concat(arrCombineCP, ignore_index=True)
+#get mode of combination
+dfModeCombineCP = getModeCombineCP(datCombineCP)
+
+#processing weekly data
+datWeekly = pd.concat(arrCombineCP, ignore_index=True)
+
+#processing daily data
+
 
 
