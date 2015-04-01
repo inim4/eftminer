@@ -155,8 +155,7 @@ def frameTrans(datTrans):
 	df3 = pd.merge(df2,df_amttc13,how='outer',on=['rid','sic'])
 	df4 = pd.merge(df3,df_ncashb,how='outer',on=['rid','sic'])
 	df5 = pd.merge(df4,df_amtcashb,how='outer',on=['rid','sic'])
-	df6 = pd.merge(df5,df_return,how='outer',on=['rid','sic'])
-	dfTrans = pd.merge(df6,df_ntc17,how='outer',on=['rid','sic'])
+	dfTrans = pd.merge(df5,df_ntc17,how='outer',on=['rid','sic'])
 
 	dfTrans['ntc10']=dfTrans['ntc10'].fillna(0)
 	dfTrans['amttc10']=dfTrans['amttc10'].fillna(0)
@@ -164,16 +163,15 @@ def frameTrans(datTrans):
 	dfTrans['amttc13']=dfTrans['amttc13'].fillna(0)
 	dfTrans['ncashb']=dfTrans['ncashb'].fillna(0)
 	dfTrans['amtcashb']=dfTrans['amtcashb'].fillna(0)
-	dfTrans['nreturn']=dfTrans['nreturn'].fillna(0)
-	dfTrans['amtreturn']=dfTrans['amtreturn'].fillna(0)
 	dfTrans['ntc17']=dfTrans['ntc17'].fillna(0)
 
 	arrTrans = [transMrg, dfTrans]
 
 	return arrTrans
 
-def computeReturn(transMrg):
+def computeReturn(transMrg, returnDat):
 	
+	returnDat['famt']=returnDat['famt1']
 	'''
 	DataFrame for computing total number and amount of merchandise returned
 	numreturn (n total return transaction)
@@ -183,8 +181,8 @@ def computeReturn(transMrg):
 	customer id data revenue = customer id data return
 	'''
 	nrevGrp= transMrg.groupby(['strretailerid','sic','strcardno']).size()
-	nretGrp= retrn.groupby(['strretailerid','sic','strcardno']).size()
-	sretGrp= retrn.groupby(['strretailerid','sic','strcardno'])['famt'].sum()
+	nretGrp= returnDat.groupby(['strretailerid','sic','strcardno']).size()
+	sretGrp= returnDat.groupby(['strretailerid','sic','strcardno'])['famt'].sum()
 	nrevInd= nrevGrp.index
 	nretInd = nretGrp.index
 	sretInd = sretGrp.index
@@ -195,6 +193,8 @@ def computeReturn(transMrg):
 	dfRet12 = pd.merge(dfRet1,dfRet2,how='outer',on=['rid','sic','cid'])
 	dfMergeRet = pd.merge(dfRev,dfRet12,how='inner',on=['rid','sic','cid'])
 	df_return = dfMergeRet[['rid','sic','nreturn','amtreturn']]
+	df_return['nreturn']=df_return['nreturn'].fillna(0)
+	df_return['amtreturn']=df_return['amtreturn'].fillna(0)
 
 	return df_return
 

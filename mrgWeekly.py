@@ -80,6 +80,8 @@ for j in range(len(arrDaily)):
 	dfWeeklySlope = dfSlope[['rid','sic','slopeInfo']]
 
 	#merge aggregated data frame and slope data
-	dfWeekly = pd.merge(dfWeekly,dfSlope,how='outer',on=['rid','sic'])
+	dfWeekly = pd.merge(dfWeekly,dfWeeklySlope,how='outer',on=['rid','sic'])
+	dfWeekly['slopeInfo']=dfWeekly['slopeInfo'].fillna(0)
+	
 
 	weekList.append(dfWeekly)

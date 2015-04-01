@@ -107,6 +107,7 @@ for i in range(len(arrFortnight)):
 	mrg1 = pd.merge(dfCont,dfContRatio,how='outer',on=['rid','sic'])
 	mrg2 = pd.merge(mrg1,dfCombineCP,how='outer',on=['rid','sic'])
 	dfFortnightly = pd.merge(mrg2,df2w,how='outer',on=['rid','sic'])
+	dfFortnightly['slopeInfo']=dfFortnightly['slopeInfo'].fillna(0)
 
 	aggFortnightList.append(dfFortnightly)
 
