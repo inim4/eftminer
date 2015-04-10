@@ -413,12 +413,13 @@ def mrgMaxRevenue(dfDat):
 	# find the max revenue, datetime, and day time when max revenue occurs
 	# function for weekly, fortnightly, and all 6w data calculation
 	
-	maxRevDT = dfDat.groupby(['rid','sic', 'dt', 'daytime', 'nWeek')['amtRev'].max()
-	dfMaxRevDT = pd.DataFrame({'rid':[maxRevDT.index[i][0] for i in range(0,len(maxRevDT))],'sic':[maxRevDT.index[i][1] for i in range(0,len(maxRevDT))], 'dt':[maxRevDT.index[i][2] for i in range(0,len(maxRevDT))], 'daytime':[maxRevDT.index[i][3] for i in range(0,len(maxRevDT))],  'nWeek':[maxRevDT.index[i][4] for i in range(0,len(maxRevDT))], 'maxRev':[maxRevDT[j] for j in range(0,len(maxRevDT))]})
+	maxRevDT = dfDat.groupby(['rid','sic', 'dt', 'daytime')['amtRev'].max()
+	dfMaxRevDT = pd.DataFrame({'rid':[maxRevDT.index[i][0] for i in range(0,len(maxRevDT))],'sic':[maxRevDT.index[i][1] for i in range(0,len(maxRevDT))], 'dt':[maxRevDT.index[i][2] for i in range(0,len(maxRevDT))], 'daytime':[maxRevDT.index[i][3] for i in range(0,len(maxRevDT))], 'maxRev':[maxRevDT[j] for j in range(0,len(maxRevDT))]})
 	
 	maxRev = dfMaxRevDT.groupby(['rid','sic'])['maxRev'].max()
 	dfMaxRev = pd.DataFrame({'rid':[maxRev.index[i][0] for i in range(0,len(maxRev))],'sic':[maxRev.index[i][1] for i in range(0,len(maxRev))],'maxRev':[maxRev[j] for j in range(0,len(maxRev))]})
 	dfMergeMaxRev = pd.merge(dfMaxRevDT,dfMaxRev,how='inner',on=['rid','sic','maxRev'])
+	dfMergeMaxRev['nWeek']=nWeek
 
 	return dfMergeMaxRev
 
@@ -451,9 +452,6 @@ def getSlope(datGrp):
 		dfTheta = pd.DataFrame({'rid':(dfTmpSorted['rid'][0]),'sic':(dfTmpSorted['sic'][0]), 'intercept':[intercept], 'slope':[slope]})
 		slopeDat = slopeDat.append(dfTheta, ignore_index=True)
 
-	slopeDat['gradient']=slopeDat['slope'].apply(lambda x:round(math.degrees(np.arctan(x)),2))
-	# slope positive = 1, slope negative = 2 
-	slopeDat['slopeInfo']=slopeDat['slope'].apply(lambda x: 1 if x > 0 else 2)
 
 	return slopeDat
 
