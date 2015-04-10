@@ -47,9 +47,10 @@ def selectData(datparam, strdate, nweek):
 	cardlist=['1','2']
 	dat = datparam[(datparam['sic'].isin(siclist)) & (datparam['t'].isin(cardlist))]
 	dat['acqfiid']= np.where(dat['stracqfiid'].str.contains('ANZ'),'ANZ','NONANZ')
-	dat['cardfiid']= np.where(dat['strcardfiid'].str.contains('ANZ'),'ANZ','NONANZ')	
+	dat['cardfiid']= np.where(dat['strcardfiid'].str.contains('ANZ'),'ANZ','NONANZ')
+	slcDat = dat[['strretailerid','sic','str_time','strdate','nWeek','acqfiid','cardfiid', 'strcardno','tc','t','aa','c','famt1','famt2']]	
 	
-	return dat
+	return slcDat
 
 def selectTrans(dat):
 
