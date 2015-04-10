@@ -430,23 +430,24 @@ def mrgMaxRevenue(dfDat):
 
 	return dfMergeMaxRev
 
-def getSlope(indexGrp, datGrp):
+def getSlope(datGrp):
 
 	slopeDat = pd.DataFrame({'rid':[],'sic':[], 'intercept':[], 'slope':[]})
-	for i in range(0,len(indexGrp)):
-		tmpArr = datGrp.get_group(indexGrp)
+	for iNum in range(0,len(datGrp)):
+		tmpArr = datGrp[iNum]
+		arrLn = len(tmpArr)
 		tmpArr = tmpArr.set_index(['strretailerid','sic'])
-		dfTmp = pd.DataFrame({'rid':[tmpArr.index[m][0] for m in range(0,len(tmpArr))],'sic':[tmpArr.index[m][1] for m in range(0,len(tmpArr))], 'dt':[tmpArr['dt'][m] for m in range(0,len(tmpArr))], 'famt':[tmpArr['famt'][m] for m in range(0,len(tmpArr))]})
+		dfTmp = pd.DataFrame({'rid':[tmpArr.index[jNum][0] for jNum in range(0,arrLn)],'sic':[tmpArr.index[jNum][1] for jNum in range(0,arrLn)], 'dt':[tmpArr['dt'][jNum] for jNum in range(0,arrLn)], 'famt':[tmpArr['famt'][jNum] for jNum in range(0,arrLn)]})
 		dfTmpSorted = dfTmp.sort_index(by='dt', ascending=True)
-		dfTmpSorted['sorted']=[o for o in range(0,len(dfTmpSorted))]
+		dfTmpSorted['sorted']=[kNum for kNum in range(0,len(dfTmpSorted))]
 		x = dfTmpSorted['sorted']
 		y = dfTmpSorted['famt']
 		tmp1=[]
 		tmp2=[]
-		for p in range(0,len(x)):
-			tmp1.append(x[p])
-		for q in range(0,len(y)):
-			tmp2.append(y[q])
+		for lNum in range(0,len(x)):
+			tmp1.append(x[lNum])
+		for mNum in range(0,len(y)):
+			tmp2.append(y[mNum])
 
 		datX = np.array(tmp1)
 		datY = np.array(tmp2)
@@ -468,9 +469,9 @@ def getModeTime(dfDat):
 	
 	# find the most frequent time of day and datetime when max revenue occurs
 	# from all merged 6W data       
-	datTimeOfDay = dfDat[['rid', 'sic', 'daytime']]
+	
 	# mode of timeOfDay for every rid+sic key
-	grpTimeOfDay = datTimeOfDay.groupby(['rid','sic'])
+	grpTimeOfDay = dfDat.groupby(['rid','sic'])
 	arrName=[]
 	tmpArr=[]
 	modeTime = 0

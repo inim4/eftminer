@@ -14,6 +14,7 @@ from prep import *
 weekList=[]
 #array list of daily data with weekly format: 6 data items (6w). 1 data item consists of concatenated daily data within a week
 dailyList=[]
+timeList=[]
 
 datName = 'datList%(i)02d'
 arrDaily = [datName % {'i':i} for i in range(1,8)]
@@ -26,7 +27,9 @@ for j in range(len(arrDaily)):
 
 	#extract relevant attributes for generating 6w slope from daily data and get weekly slope
 	datSlope = dfOneWeek[['rid','sic','dt', 'amtRev']]
+	datTime = dfOneWeek[['rid','sic','daytime']]
 	dailyList.append(datSlope)
+	timeList.append(datTime)
 
 	#weekly slope
 	datSorted = datSlope.sort_index(by='dt', ascending = True)
