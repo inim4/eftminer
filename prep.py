@@ -80,11 +80,11 @@ def selectTrans(dat):
 	datFilter['is_noon']=datFilter['dt'].apply(lambda x: 2 if (x.hour > 12 and x.hour <=18)  else 0)
 	datFilter['is_evening']=datFilter['dt'].apply(lambda x: 3 if (x.hour > 18 and x.hour <=24) else 0)
 	datFilter['daytime'] = datFilter['is_morning'].apply(lambda x: int(x)) + datFilter['is_noon'].apply(lambda x: int(x)) + datFilter['is_evening'].apply(lambda x: int(x))
-
+	transFilter = datFilter[['strretailerid','sic','strdate','dt','daytime','nWeek','acqfiid','cardfiid', 'strcardno','tc','t','aa','c','famt1','famt2']]
 	cdepos=['10','12','13', '17', '18','21','24','62']
 	cdemin=['14','22']
-	rev = datFilter[datFilter['tc'].isin(cdepos)]
-	retrn = datFilter[datFilter['tc'].isin(cdemin)]
+	rev = transFilter[transFilter['tc'].isin(cdepos)]
+	retrn = transFilter[transFilter['tc'].isin(cdemin)]
 	datTrans =[rev,retrn]
 
 	return datTrans
@@ -92,8 +92,7 @@ def selectTrans(dat):
 def frameTrans(datTrans):
 
 	rev = datTrans[0]
-	retrn = datTrans[1]
-	retrn['famt']=retrn['famt1']
+	
 
 	'''
 	numtc10 (n total normal purchase transaction)
@@ -259,7 +258,7 @@ def computeFiid(transMrg):
 
 	return dfFiidAll
 
-def computeRevenue(transMrg):
+def computeRevenue(transMrg, nWeek):
 
 	'''
 	max revenue
@@ -272,8 +271,8 @@ def computeRevenue(transMrg):
 	dfntrans = pd.DataFrame({'rid':[ntrans.index[i][0] for i in range(0,len(ntrans))],'sic':[ntrans.index[i][1] for i in range(0,len(ntrans))], 'ntrans':[ntrans[j] for j in range(0,len(ntrans))]})
 
 	#calculate daily max revenue
-	maxRevDT = transMrg.groupby(['strretailerid','sic', 'dt', 'daytime','nWeek'])['famt'].max()
-	dfMaxRevDT = pd.DataFrame({'rid':[maxRevDT.index[i][0] for i in range(0,len(maxRevDT))],'sic':[maxRevDT.index[i][1] for i in range(0,len(maxRevDT))], 'dt':[maxRevDT.index[i][2] for i in range(0,len(maxRevDT))], 'daytime':[maxRevDT.index[i][3] for i in range(0,len(maxRevDT))], 'nWeek':[maxRevDT.index[i][4] for i in range(0,len(maxRevDT))], 'maxRev':[maxRevDT[j] for j in range(0,len(maxRevDT))]})
+	maxRevDT = transMrg.groupby(['strretailerid','sic', 'dt', 'daytime'])['famt'].max()
+	dfMaxRevDT = pd.DataFrame({'rid':[maxRevDT.index[i][0] for i in range(0,len(maxRevDT))],'sic':[maxRevDT.index[i][1] for i in range(0,len(maxRevDT))], 'dt':[maxRevDT.index[i][2] for i in range(0,len(maxRevDT))], 'daytime':[maxRevDT.index[i][3] for i in range(0,len(maxRevDT))], 'maxRev':[maxRevDT[j] for j in range(0,len(maxRevDT))]})
 	maxRev = dfMaxRevDT.groupby(['rid','sic'])['maxRev'].max()
 	dfMaxRev = pd.DataFrame({'rid':[maxRev.index[i][0] for i in range(0,len(maxRev))],'sic':[maxRev.index[i][1] for i in range(0,len(maxRev))],'maxRev':[maxRev[j] for j in range(0,len(maxRev))]})
 	dfMergeMaxRev = pd.merge(dfMaxRevDT,dfMaxRev,how='inner',on=['rid','sic','maxRev'])
@@ -283,29 +282,21 @@ def computeRevenue(transMrg):
 	
 	dfRev['amtRev']=dfRev['amtRev'].fillna(0)
 	dfRev['ntrans']=dfRev['ntrans'].fillna(0)
-	dfRev['daytime']=dfRev['daytime'].fillna(0)
 	dfRev['maxRev']=dfRev['maxRev'].fillna(0)
+	dfRev['nWeek']=nWeek
 
 	return dfRev
 
 def aggAll(dfAll):
 
 	
-	'''
-	- dfTrans
-	- dfMergeRet
-	- dfFiidAll
-	- dfRev
-	'''
-	
 	dfTrans = dfAll[0]
-	dfFiidAll = dfAll[1]
-	dfMergeRet = dfAll[2]
+	dfFiid = dfAll[1]
+	dfRet = dfAll[2]
 	dfRev = dfAll[3]
-	dfDailySlope = dfAll[4]
 
-	agg1 = pd.merge(dfTrans,dfFiidAll,how='outer',on=['rid','sic'])
-	agg2 = pd.merge(agg1,dfMergeRet,how='outer',on=['rid','sic'])
+	agg1 = pd.merge(dfTrans,dfFiid,how='outer',on=['rid','sic'])
+	agg2 = pd.merge(agg1,dfRet,how='outer',on=['rid','sic'])
 	dataprep = pd.merge(agg2,dfRev,how='outer',on=['rid','sic'])
 	
 	return dataprep
