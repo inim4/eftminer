@@ -115,7 +115,7 @@ def prepWeekly(arrDaily, nWeek):
 	#'rid', 'sic', 'ntc10', 'amttc10', 'ntc13', 'amttc13', 'ncashb', 'amtcashb', 'ntc17','nfiid1','amtfiid1','nfiid2','amtfiid2','nfiid3','amtfiid3','nfiid4','amtfiid4','nfiid5','amtfiid5','nfiid6','amtfiid6','ntrans','amtRev', 'nreturn', 'amtreturn','maxRev','nWeek','dt','daytime','weeklySlope'
 	mrg = pd.merge(dfWeeklyDat,dfWeeklyMaxRev,how='outer',on=['rid','sic'])
 	dfWeekly = pd.merge(mrg,dfWeeklySlope,how='outer',on=['rid','sic'])
-	dfWeekly['slopeInfo']=dfWeekly['slopeInfo'].fillna(0)
+	dfWeekly['weeklySlope']=dfWeekly['weeklySlope'].fillna(0)
 	
 	return dfWeekly
 

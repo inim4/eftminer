@@ -17,6 +17,10 @@ arrContRatio=[]
 #array for combination of change point & 2w slope per fortnight
 arrCombineCP=[]
 
+#array of week information when maximum revenue occurs per 2 weeks data (either week 1 or 2)
+#consists of 3 array items
+arrWeekMaxRev=[]
+
 
 # --------------------------------------------------------------
 # function to compute fortnightly slope
@@ -130,6 +134,7 @@ def prepFortnightly(arrFortnight):
 	#resulting 6 attributes:
 	#'rid','sic','maxRev','nWeek'
 	df2wMaxRev = fortnightMaxRevenue(rev2w)
+	arrWeekMaxRev.append(df2wMaxRev)
 
 	#------------------------------------------
 	#merge data frame

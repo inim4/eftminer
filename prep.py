@@ -434,6 +434,17 @@ def fortnightMaxRevenue(dfDat):
 	
 	return df2wMaxRev
 
+# ----------------------------------------------------------------------------------
+# function to compute maximum revenue for all 6 weeks data
+# ----------------------------------------------------------------------------------
+def getMaxRevenue(dfDat):
+	
+	maxRev = dfMaxRevDT.groupby(['rid','sic'])['maxRev'].max()
+	dfMaxRev = pd.DataFrame({'rid':[maxRev.index[i][0] for i in range(0,len(maxRev))],'sic':[maxRev.index[i][1] for i in range(0,len(maxRev))],'maxRev':[maxRev[j] for j in range(0,len(maxRev))]})
+
+
+	return dfMaxRev
+
 
 # -------------------------------------------------------------------------
 # function to compute the slope attributes (slope info, intercept, gradient)
@@ -470,6 +481,9 @@ def getSlope(datGrp):
 
 	return slopeDat
 
+# -------------------------------------------------------------------------
+# function to compute the mode of daytime when max revenue occurs
+# -------------------------------------------------------------------------
 def getModeTime(dfDat):
 	
 	# find the most frequent time of day and datetime when max revenue occurs
@@ -477,14 +491,14 @@ def getModeTime(dfDat):
 	
 	# mode of timeOfDay for every rid+sic key
 	grpTimeOfDay = dfDat.groupby(['rid','sic'])
-	arrName=[]
+	grpName=[]
 	tmpArr=[]
 	modeTime = 0
 	dfModeTime = pd.DataFrame({'rid':[],'sic':[], 'timeMaxRev':[]})
 	for name, group in grpTimeOfDay:
-		arrName.append(name)
-	for j in range(len(arrName)):
-		tmpArr = grpTimeOfDay.get_group(arrName[j])
+		grpName.append(group)
+	for j in range(len(grpName)):
+		tmpArr = grpName[j]
 		tmpArr = tmpArr.set_index(['rid', 'sic'])
 		modeTmp = mode(tmpArr['daytime'])
 		modeTime = modeTmp[0][0]
@@ -493,6 +507,9 @@ def getModeTime(dfDat):
 
 	return dfModeTime
 
+# -------------------------------------------------------------------------
+# function to compute the mode of week when max revenue occurs
+# -------------------------------------------------------------------------
 def getModeWeek(dfDat):
 	
 	# find the most frequent week when max revenue occurs : 1 = week 1; 2 = week 2
@@ -501,14 +518,14 @@ def getModeWeek(dfDat):
 	datWeek = dfDat[['rid', 'sic', 'week']]
 	# mode of timeOfDay for every rid+sic key
 	grpWeekRev = datWeek.groupby(['rid','sic'])
-	arrName=[]
+	grpName=[]
 	tmpArr=[]
 	modeWeek = 0
 	dfModeWeek = pd.DataFrame({'rid':[],'sic':[], 'weekMaxRev':[]})
 	for name, group in grpWeekRev:
-		arrName.append(name)
-	for j in range(len(arrName)):
-		tmpArr = grpWeekRev.get_group(arrName[j])
+		grpName.append(group)
+	for j in range(len(grpName)):
+		tmpArr = grpName[j]
 		tmpArr = tmpArr.set_index(['rid', 'sic'])
 		modeTmp = mode(tmpArr['week'])
 		modeWeek = modeTmp[0][0]
@@ -667,18 +684,21 @@ def combineChangePoint(df2WChangePoint, df2WSlope):
 
 	return dfCombineCP
 
+# ------------------------------------------------------------------------------------------
+# function to get the mode of the combination b/w 2 weeks change point and fortnightly slope
+# ------------------------------------------------------------------------------------------
 def getModeCombineCP(dfCombineCP):
 	
 	# mode of combination
 	dfCombine = dfCombineCP.groupby(['rid','sic'])
-	arrName=[]
+	grpName=[]
 	tmpArr=[]
 	modeComb = 0
 	dfModeCP = pd.DataFrame({'rid':[],'sic':[], 'combineSlope':[]})
 	for name, group in dfCombine:
-		arrName.append(name)
-	for j in range(len(arrName)):
-		tmpArr = dfCombine.get_group(arrName[j])
+		grpName.append(group)
+	for j in range(len(grpName)):
+		tmpArr = grpName[j]
 		tmpArr = tmpArr.set_index(['rid', 'sic'])
 		modeTmp = mode(tmpArr['combineSlope'])
 		modeCP = modeTmp[0][0]
