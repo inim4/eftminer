@@ -301,6 +301,9 @@ def aggAll(dfAll):
 	
 	return dataprep
 
+# --------------------------------------------------------------
+# function to aggregate attributes
+# --------------------------------------------------------------
 def sumData(dfDat):
 
 	# merge / sum transaction code and monetary values
@@ -408,21 +411,33 @@ def sumData(dfDat):
 	
 	return sumDat
 
-def mrgMaxRevenue(dfDat):
-
-	# find the max revenue, datetime, and day time when max revenue occurs
-	# function for weekly, fortnightly, and all 6w data calculation
-	
-	maxRevDT = dfDat.groupby(['rid','sic', 'dt', 'daytime')['amtRev'].max()
-	dfMaxRevDT = pd.DataFrame({'rid':[maxRevDT.index[i][0] for i in range(0,len(maxRevDT))],'sic':[maxRevDT.index[i][1] for i in range(0,len(maxRevDT))], 'dt':[maxRevDT.index[i][2] for i in range(0,len(maxRevDT))], 'daytime':[maxRevDT.index[i][3] for i in range(0,len(maxRevDT))], 'maxRev':[maxRevDT[j] for j in range(0,len(maxRevDT))]})
+# ----------------------------------------------------------------------------------
+# function to compute maximum revenue for weekly data
+# ----------------------------------------------------------------------------------
+def weeklyMaxRevenue(dfDat,nWeek):
 	
 	maxRev = dfMaxRevDT.groupby(['rid','sic'])['maxRev'].max()
 	dfMaxRev = pd.DataFrame({'rid':[maxRev.index[i][0] for i in range(0,len(maxRev))],'sic':[maxRev.index[i][1] for i in range(0,len(maxRev))],'maxRev':[maxRev[j] for j in range(0,len(maxRev))]})
-	dfMergeMaxRev = pd.merge(dfMaxRevDT,dfMaxRev,how='inner',on=['rid','sic','maxRev'])
-	dfMergeMaxRev['nWeek']=nWeek
+	dfMaxRev['nWeek']=nWeek
 
-	return dfMergeMaxRev
+	return dfMaxRev
 
+
+
+# ----------------------------------------------------------------------------------
+# function to compute maximum revenue for fortnightly data
+# ----------------------------------------------------------------------------------
+def fortnightMaxRevenue(dfDat):
+	
+	maxRev = dfMaxRevDT.groupby(['rid','sic','nWeek'])['maxRev'].max()
+	df2wMaxRev = pd.DataFrame({'rid':[maxRev.index[i][0] for i in range(0,len(maxRev))],'sic':[maxRev.index[i][1] for i in range(0,len(maxRev))],'nWeek':[maxRev.index[i][2] for i in range(0,len(maxRev))],'maxRev':[maxRev[j] for j in range(0,len(maxRev))]})
+	
+	return df2wMaxRev
+
+
+# -------------------------------------------------------------------------
+# function to compute the slope attributes (slope info, intercept, gradient)
+# -------------------------------------------------------------------------
 def getSlope(datGrp):
 
 	slopeDat = pd.DataFrame({'rid':[],'sic':[], 'intercept':[], 'slope':[]})
@@ -502,6 +517,10 @@ def getModeWeek(dfDat):
 
 	return dfModeWeek
 
+
+# --------------------------------------------------------------
+# function to compute initial contribution in the first two week
+# --------------------------------------------------------------
 def getInitCont(dfDat):
 
 	# get initial contribution (only first fortnightly revenue of training data)
@@ -511,25 +530,30 @@ def getInitCont(dfDat):
 
 	return dfInitCont
 
+# -----------------------------------------------------------------
+# function to compute the ratio of contribution between week 1 & 2
+# -----------------------------------------------------------------
 def getContRatio(dfDat):
 	
 	# get first week and second week contribution within first fortnight data
 	dfContRatio = pd.DataFrame({'rid':[],'sic':[], 'contRatio':[]})
 	retailerGrp = dfDat.groupby(['rid','sic'])
-	arrName=[]
+	grpName=[]
 	tmpArr=[]
 	fCont = 0
 	lCont = 0
 	contRatio = 0
 	for name, group in retailerGrp:
-		arrName.append(name)
-	for j in range(len(arrName)):
-		tmpArr = retailerGrp.get_group(arrName[j])
+		grpName.append(group)
+	for j in range(len(grpName)):
+		tmpArr = grpName[j]
+		lnArr = len(tmpArr)
 		tmpArr = tmpArr.sort_index(by='nWeek', ascending=True)
 		tmpArr = tmpArr.set_index(['rid','sic'])
 
 		# get value of fCont and lCont from first and second week of revenue
-		if len(tmpArr)==2:
+		# if retailer data (rid, sic) appears in both weeks (week 1 & 2)
+		if lnArr==2:
 			fCont = tmpArr['amtRev'][0]
 			lCont = tmpArr['amtRev'][1]
 			tmpCont = fCont/lCont
@@ -557,37 +581,40 @@ def getContRatio(dfDat):
 
 	return dfContRatio
 
+# ---------------------------------------------------------------------------------
+# function to get the change point between first and second week slope
+# ---------------------------------------------------------------------------------
 def getChangePoint(dfSlope):
 	
 	dfChangePoint = pd.DataFrame({'rid':[],'sic':[],'changePoint':[], 'nWeek':[]})
-	#change point of fortnight slope
 	retailerGrp = dfSlope.groupby(['rid','sic'])
-	arrName=[]
+	grpName=[]
 	dfFortnight=[]
 	changePoint = 0 
 	nWeek = 0
 	
 	for name, group in retailerGrp:
-		arrName.append(name)
+		grpName.append(group)
 
-	for j in range(len(arrName)):
-		dfFortnight = retailerGrp.get_group(arrName[j])
+	for j in range(len(grpName)):
+		dfFortnight = grpName[j]
+		dfFortnightLn = len(dfFortnight)
 		dfFortnight = dfFortnight.sort_index(by='nWeek', ascending=True)
 		dfFortnight = dfFortnight.set_index(['rid','sic'])
-
-		if len(dfFortnight)==2:
+		# if retailer data (rid, sic) appears in both weeks (week 1 & 2)
+		if dfFortnightLn==2:
 			
 			# slope positive - negative
-			if ((dfFortnight['slopeInfo'][0] == 1) & (dfFortnight['slopeInfo'][1] == 2)):
+			if ((dfFortnight['weeklySlope'][0] == 1) & (dfFortnight['weeklySlope'][1] == 2)):
 				changePoint = 1
 			# slope negative - positive
-			elif ((dfFortnight['slopeInfo'][0] == 2) & (dfFortnight['slopeInfo'][1] == 1)):
+			elif ((dfFortnight['weeklySlope'][0] == 2) & (dfFortnight['weeklySlope'][1] == 1)):
 				changePoint = 2
 			# slope positive - positive
-			elif ((dfFortnight['slopeInfo'][0] == 1) & (dfFortnight['slopeInfo'][1] == 1)):
+			elif ((dfFortnight['weeklySlope'][0] == 1) & (dfFortnight['weeklySlope'][1] == 1)):
 				changePoint = 3
 			# slope negative - negative 
-			elif ((dfFortnight['slopeInfo'][0] == 2) & (dfFortnight['slopeInfo'][1] == 2)):
+			elif ((dfFortnight['weeklySlope'][0] == 2) & (dfFortnight['weeklySlope'][1] == 2)):
 				changePoint = 4
 
 		# if retailer data only appears once within fortnight data
@@ -595,30 +622,33 @@ def getChangePoint(dfSlope):
 			
 			# if it only appears in week 1
 			# slope positive - flat
-			if ((dfFortnight['nWeek'][0] == 1) & (dfFortnight['slopeInfo'][1] == 1)):
+			if ((dfFortnight['nWeek'][0] == 1) & (dfFortnight['weeklySlope'][1] == 1)):
 				changePoint = 5
 			# slope negative - flat
-			elif ((dfFortnight['nWeek'][0] == 1) & (dfFortnight['slopeInfo'][1] == 2)):
+			elif ((dfFortnight['nWeek'][0] == 1) & (dfFortnight['weeklySlope'][1] == 2)):
 				changePoint = 6
 			
 			# if it only appears in week 2
 			# slope flat - positive
-			elif ((dfFortnight['nWeek'][0] == 2) & (dfFortnight['slopeInfo'][1] == 1)):
+			elif ((dfFortnight['nWeek'][0] == 2) & (dfFortnight['weeklySlope'][1] == 1)):
 				changePoint = 7
 			# slope flat - negative
-			elif ((dfFortnight['nWeek'][0] == 2) & (dfFortnight['slopeInfo'][1] == 2)):
+			elif ((dfFortnight['nWeek'][0] == 2) & (dfFortnight['weeklySlope'][1] == 2)):
 				changePoint = 8
 			
-	df = pd.DataFrame({'rid':(dfFortnight['rid'][0]),'sic':(dfFortnight['sic'][0]), 'changePoint': changePoint, 'nWeek': nWeek})
+	df = pd.DataFrame({'rid':(dfFortnight['rid'][0]),'sic':(dfFortnight['sic'][0]), 'changePoint': changePoint})
 	dfChangePoint = dfChangePoint.append(df, ignore_index = True)
 
 	return dfChangePoint
 
+# ---------------------------------------------------------------------------------
+# function to get the combination of 2 weeks change point and fortnightly slope
+# ---------------------------------------------------------------------------------
 def combineChangePoint(df2WChangePoint, df2WSlope):
 
-	# combination of two weeks slope and change points --> to generate mode of combination
 	dfMrg = pd.merge(df2WChangePoint,df2WSlope, on=['rid','sic'])
-	dfMrg['combineSlope']=np.where((dfMrg['slopeInfo'] == 1),(dfMrg['changePoint']),(dfMrg['changePoint']+8)) 
+	#
+	dfMrg['combineSlope']=np.where((dfMrg['slopeInfo'] == 1),(dfMrg['changePoint']),((dfMrg['changePoint'])+8)) 
 	grp1=[2,3,5,7]
 	grp2=[9,12,14,16]
 	grp3=[1,4,6,8]
@@ -631,7 +661,9 @@ def combineChangePoint(df2WChangePoint, df2WSlope):
 	combine2['grpCombineSlope'] = 2
 	combine3['grpCombineSlope'] = 3
 	combine4['grpCombineSlope'] = 4
-	dfCombineCP = dfMrg[['rid', 'sic', 'grpCombineSlope']]
+	arrCombine = [combine1,combine2,combine3,combine4]
+	mrgCombine = pd.concat(arrCombine, ignore_index=True)
+	dfCombineCP = mrgCombine[['rid', 'sic', 'grpCombineSlope']]
 
 	return dfCombineCP
 

@@ -35,7 +35,7 @@ for k in range(len(names)):
 	datTrans = arrTrans[0]
 
 	# --------------------------
-	# resulting 9 total transaction and monetary attributes
+	# resulting 9 attributes from total transaction and monetary 
 	# 'rid', 'sic', 'ntc10', 'amttc10', 'ntc13', 'amttc13', 'ncashb', 'amtcashb', 'ntc17'
 	dfTrans = arrTrans[1]
 
