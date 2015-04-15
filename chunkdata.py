@@ -10,15 +10,13 @@ import re
 
 
 def read_data(path):
+
+    import sys
+    if sys.version_info[0] < 3:
+        from StringIO import StringIO
+    else:
+        from io import StringIO
    
-    headclm=None
-    dat=None
-    dataall=None
-    cleaned=None
-    datasample=None
-    retailerdat=None
-    retailer=None
-    data=None
 
     headclm = ['post_date', 'acq_fiid', 'term_id', 'aud_no', 'msg_type','card_no','exp_date','trk2','card_ln','card_fiid','acq_ln','tran_cde','pos_entry_mde','pos_cond_cde','pin_ind','sic','responder','rc','draft_capt_flg','amt1','amt2','b24_acq_date','b24_acq_time','acq_ic_setl_dat','iss_ic_setl_dat','retailer_id','head_term_tim','head_rec_type','auth_term_city','auth_term_cntry_cde','p0_merch_num','p0_fbck_txn','p0_chip_cond_cde','p0_trk2_len','p0_term_class','p0_emv_enabled_term','p0_pt_srv_entry_mde','pb_tran_cc','pb_auth_rc','b3_term_cap','b3_emv_term_type','b4_pt_srv_entry_mde','b4_term_entry_cap','b4_last_emv_stat','b4_data_suspect','b4_dev_info','b4_arqc_vrfy','c0_e_com_flg','c0_cci','c0_order_type','c0_tran_type','c0_sli','c0_cct','c0_term_postal_cde','card_id']
     
@@ -50,15 +48,14 @@ def read_data(path):
     data3 = dat3[1:len(dat3)]
     mrg1 = data1.append(data2,ignore_index=True)
     dataall = mrg1.append(data3,ignore_index=True)
-    cleaned = dataall[dataall['retailer_id'].notnull()]
+
+    return dataall
+
+
+def clean_data(dataall):
+
     cleaned = dataall[dataall['retailer_id'].str.len()!=0]
     datasample=cleaned[['card_no','acq_fiid', 'card_fiid','tran_cde','sic','amt1','amt2','b24_acq_time','retailer_id']]
-    
-    dat = []
-    dat = None
-    cleaned = []
-    cleaned = None
-
     datasample['strcard_no']=map(str,datasample['card_no'])
     datasample['strtran_cde']=map(str,datasample['tran_cde'])
     datasample['strsic']=map(str,datasample['sic'])
@@ -129,11 +126,13 @@ c[:].run('prep.py')
 c[:].block = True
 numC = len(c)
 
-dat22 = c[0].apply_sync(read_data,names[0])
-dat23 = c[1].apply_sync(read_data,names[1])
-dat24 = c[2].apply_sync(read_data,names[2])
-dat25 = c[3].apply_sync(read_data,names[3])
-dat26 = c[4].apply_sync(read_data,names[4])
+dat01 = c[0].apply_sync(read_data,names[0])
+dat02 = c[1].apply_sync(read_data,names[1])
+dat03 = c[2].apply_sync(read_data,names[2])
+dat04 = c[3].apply_sync(read_data,names[3])
+dat05 = c[4].apply_sync(read_data,names[4])
+dat06 = c[5].apply_sync(read_data,names[5])
+dat07 = c[6].apply_sync(read_data,names[6])
 
 
 # Array list for week 1 dataset, week number is set manually (e.g. datList1, datList2,...)
