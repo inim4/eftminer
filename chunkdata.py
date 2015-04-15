@@ -1,3 +1,4 @@
+from IPython.parallel import Client
 import sys
 if sys.version_info[0] < 3:
     from StringIO import StringIO
@@ -115,8 +116,32 @@ def read_data(path):
     return data
     
 
-data35 = read_data('/mnt/eftdata2/pos_ptlf_20131009.txt')
-data35.to_csv('/home/tita/docs/exp2/data35.txt',sep='\t')
+fileName = '/mnt/eftdata2/pos_ptlf_201309%(i)02d.txt'
+names = [fileName % {'i':i} for i in range(26,31)]
+strDate = '2013-09-%(j)02d' 
+dates = [strDate %{'j':j} for j in range(26,31)]
+
+
+# Connect to the IPython cluster
+# set 7 cluster engines, 1 cluster preprocess 1 daily data (total 7 daily dataset per week)
+c = Client(profile='titaClusters')
+c[:].run('prep.py')
+c[:].block = True
+numC = len(c)
+
+dat22 = c[0].apply_sync(read_data,names[0])
+dat23 = c[1].apply_sync(read_data,names[1])
+dat24 = c[2].apply_sync(read_data,names[2])
+dat25 = c[3].apply_sync(read_data,names[3])
+dat26 = c[4].apply_sync(read_data,names[4])
+
+
+# Array list for week 1 dataset, week number is set manually (e.g. datList1, datList2,...)
+# consists of 7 daily data, 1 week = 7 days
+#datList01 = [dat1,dat2,dat3,dat4,dat5,dat6,dat7]
+
+#data35 = read_data('/mnt/eftdata2/pos_ptlf_20131009.txt')
+#data35.to_csv('/home/tita/docs/exp2/data35.txt',sep='\t')
 
 
 
