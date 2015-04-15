@@ -9,7 +9,7 @@ from timeit import default_timer as clock
 from sklearn.linear_model import LinearRegression
 from prep import *
 
-fileName = '/home/tita/docs/exp2/data%(i)02d.txt'
+fileName = 'dat%(i)02d'
 names = [fileName % {'i':i} for i in range(1,8)]
 strDate = '2013-09-%(j)02d' 
 dates = [strDate %{'j':j} for j in range(5,12)]
@@ -17,12 +17,12 @@ dates = [strDate %{'j':j} for j in range(5,12)]
 # function to summarize daily data
 def prepDaily(dataName, strdate, week):
 
-	dat = readData(dataName)
+	#dat = readData(dataName)
 
 	# --------------------------
 	# function selectData(arg1,arg2,nWeek)
 	# nWeek is manually added
-	slc = selectData(dat,strdate,week)
+	slc = selectData(dataName,strdate,week)
 	trans = selectTrans(slc)
 	returnDat = trans[1]
 	arrTrans = frameTrans(trans)
@@ -51,7 +51,7 @@ def prepDaily(dataName, strdate, week):
 	# computeRevenue(datTrans,nWeek), nWeek is manually added
 	# resulting 8 attributes
 	# 'rid','sic','dt','daytime','nWeek','ntrans','amtRev','maxRev'
-	dfRev = computeRevenue(datTrans,1)
+	dfRev = computeRevenue(datTrans,week)
 	
 	# daily data
 	# resulting 29 attributes from 4 data frames
@@ -69,17 +69,17 @@ c[:].run('prep.py')
 c[:].block = True
 numC = len(c)
 
-dat1 = c[0].apply_sync(prepDaily,names[0],dates[0],1)
-dat2 = c[1].apply_sync(prepDaily,names[1],dates[1],1)
-dat3 = c[2].apply_sync(prepDaily,names[2],dates[2],1)
-dat4 = c[3].apply_sync(prepDaily,names[3],dates[3],1)
-dat5 = c[4].apply_sync(prepDaily,names[4],dates[4],1)
-dat6 = c[5].apply_sync(prepDaily,names[5],dates[5],1)
-dat7 = c[6].apply_sync(prepDaily,names[6],dates[6],1)
+day1 = c[0].apply_sync(prepDaily,names[0],dates[0],1)
+day2 = c[1].apply_sync(prepDaily,names[1],dates[1],1)
+day3 = c[2].apply_sync(prepDaily,names[2],dates[2],1)
+day4 = c[3].apply_sync(prepDaily,names[3],dates[3],1)
+day5 = c[4].apply_sync(prepDaily,names[4],dates[4],1)
+day6 = c[5].apply_sync(prepDaily,names[5],dates[5],1)
+day7 = c[6].apply_sync(prepDaily,names[6],dates[6],1)
 
 # Array list for week 1 dataset, week number is set manually (e.g. datList1, datList2,...)
 # consists of 7 daily data, 1 week = 7 days
-datList01 = [dat1,dat2,dat3,dat4,dat5,dat6,dat7]
+datList01 = [day1,day2,day3,day4,day5,day6,day7]
 
 
 
