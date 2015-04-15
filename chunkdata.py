@@ -27,18 +27,20 @@ def read_data(path):
     strLine2 = ""
     strLine3 = ""
     fileOpen = open(path, 'r')
+
     for line in fileOpen:
-	arrLine = line 
-	arrLine = arrLine.replace('\'','')
-	arrLine = arrLine.replace('\"','')
+        arrLine = line 
+        arrLine = arrLine.replace('\'','')
+        arrLine = arrLine.replace('\"','')
     	cntLn = cntLn + 1
-	if (cntLn <= 1000000):
-		strLine = strLine + arrLine 
-	elif (cntLn > 1000000 and cntLn <= 3000000):
-		strLine2 = strLine2 + arrLine
-	else:
-		strLine3 = strLine3 + arrLine
-	arrLine = ""
+        if (cntLn <= 1000000):
+            strLine = strLine + arrLine 
+        elif (cntLn > 1000000 and cntLn <= 3000000):
+            strLine2 = strLine2 + arrLine
+        else:
+            strLine3 = strLine3 + arrLine
+        arrLine = ""
+        
     dat1 = pd.read_table(StringIO(strLine),sep=',',index_col=None,header=None,names=headclm, error_bad_lines=False, dtype = unicode);
     dat2 = pd.read_table(StringIO(strLine2),sep=',',index_col=None,header=None,names=headclm, error_bad_lines=False, dtype = unicode);
     dat3 = pd.read_table(StringIO(strLine3),sep=',',index_col=None,header=None,names=headclm, error_bad_lines=False, dtype = unicode);
@@ -121,9 +123,9 @@ def extract_data(dataNames):
     return datClean
 
 fileName = '/mnt/eftdata2/pos_ptlf_201309%(i)02d.txt'
-names = [fileName % {'i':i} for i in range(26,31)]
+names = [fileName % {'i':i} for i in range(5,12)]
 strDate = '2013-09-%(j)02d' 
-dates = [strDate %{'j':j} for j in range(26,31)]
+dates = [strDate %{'j':j} for j in range(5,12)]
 
 
 # Connect to the IPython cluster
