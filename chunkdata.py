@@ -46,8 +46,8 @@ def read_data(path):
     data1 = dat1[1:len(dat1)]
     data2 = dat2[1:len(dat2)]
     data3 = dat3[1:len(dat3)]
-    mrg1 = data1.append(data2,ignore_index=True)
-    dataall = mrg1.append(data3,ignore_index=True)
+    arrData = [data1,data2,data3]
+    dataall = pd.concat(arrData,ignore_index=True)
 
     return dataall
 
@@ -113,6 +113,13 @@ def clean_data(dataall):
     return data
     
 
+def extract_data(dataNames):
+
+    datRead = read_data(dataNames)
+    datClean = clean_data(datRead)
+
+    return datClean
+
 fileName = '/mnt/eftdata2/pos_ptlf_201309%(i)02d.txt'
 names = [fileName % {'i':i} for i in range(26,31)]
 strDate = '2013-09-%(j)02d' 
@@ -126,13 +133,13 @@ c[:].run('prep.py')
 c[:].block = True
 numC = len(c)
 
-dat01 = c[0].apply_sync(read_data,names[0])
-dat02 = c[1].apply_sync(read_data,names[1])
-dat03 = c[2].apply_sync(read_data,names[2])
-dat04 = c[3].apply_sync(read_data,names[3])
-dat05 = c[4].apply_sync(read_data,names[4])
-dat06 = c[5].apply_sync(read_data,names[5])
-dat07 = c[6].apply_sync(read_data,names[6])
+dat01 = c[0].apply_sync(extract_data,names[0])
+dat02 = c[1].apply_sync(extract_data,names[1])
+dat03 = c[2].apply_sync(extract_data,names[2])
+dat04 = c[3].apply_sync(extract_data,names[3])
+dat05 = c[4].apply_sync(extract_data,names[4])
+dat06 = c[5].apply_sync(extract_data,names[5])
+dat07 = c[6].apply_sync(extract_data,names[6])
 
 
 # Array list for week 1 dataset, week number is set manually (e.g. datList1, datList2,...)
