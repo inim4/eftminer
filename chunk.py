@@ -40,10 +40,21 @@ def read_data(path):
         else:
             strLine3 = strLine3 + arrLine
         arrLine = ""
+
+        datLines = [strLine,strLine2,strLine3]
+
+    return datLines
+
+
+def read_lines(datLines):
+
+    line1 = datLines[0]
+    line2 = datLines[1]
+    line3 = datLines[2]
         
-    dat1 = pd.read_table(StringIO(strLine),sep=',',index_col=None,header=None,names=headclm, error_bad_lines=False, dtype = unicode);
-    dat2 = pd.read_table(StringIO(strLine2),sep=',',index_col=None,header=None,names=headclm, error_bad_lines=False, dtype = unicode);
-    dat3 = pd.read_table(StringIO(strLine3),sep=',',index_col=None,header=None,names=headclm, error_bad_lines=False, dtype = unicode);
+    dat1 = pd.read_table(StringIO(line1),sep=',',index_col=None,header=None,names=headclm, error_bad_lines=False, dtype = unicode);
+    dat2 = pd.read_table(StringIO(line2),sep=',',index_col=None,header=None,names=headclm, error_bad_lines=False, dtype = unicode);
+    dat3 = pd.read_table(StringIO(line3),sep=',',index_col=None,header=None,names=headclm, error_bad_lines=False, dtype = unicode);
 	
     data1 = dat1[1:len(dat1)]
     data2 = dat2[1:len(dat2)]

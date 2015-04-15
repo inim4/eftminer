@@ -14,7 +14,8 @@ from chunk import *
 def extract_data(dataNames):
 
     datRead = read_data(dataNames)
-    datClean = clean_data(datRead)
+    datAll = read_lines(datRead)
+    datClean = clean_data(datAll)
 
     return datClean
 
