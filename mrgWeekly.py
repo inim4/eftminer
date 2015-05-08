@@ -30,21 +30,23 @@ def getWeeklySlope(weeklyGrp):
 	c[:].run('prep.py')
 	c[:].block = True
 	numC = len(c)
+	#grouped rid+sic are distributed to 15 engines (e.g. 1 engine processes 500 groups)
 	nIntv = len(weeklyGrp)/15
 	cGroup = []
 
 	for l in range(0,numC):
 		m = l * nIntv
 		n = (l+1) * nIntv
-	if l == 14:
-		lastInd = len(weeklyGrp)
-	else:
-		lastInd = n
-	indGrp = []
-	for o in range(m,lastInd):
-		if len(weeklyGrp[o]) > 1:
-			indGrp.append(weeklyGrp[o])
-	cGroup.append(indGrp)
+		if l == 14:
+			lastInd = len(weeklyGrp)
+		else:
+			lastInd = n
+		indGrp = []
+		#only process group with 2 or more instances
+		for o in range(m,lastInd):
+			if len(weeklyGrp[o]) > 1:
+				indGrp.append(weeklyGrp[o])
+		cGroup.append(indGrp)
 
 	#parallel calculation of weekly slope using 15 cluster engines
 	dfTheta1 = c[0].apply_sync(getSlope,cGroup[0])
@@ -74,53 +76,52 @@ def getWeeklySlope(weeklyGrp):
 
 
 
-datName = 'datList%(i)02d'
-arrDaily = [datName % {'i':i} for i in range(1,7)]
-for j in range(len(arrDaily)):
 
-	#------------------------------------------
-	#daily data per week are concatenated into one
-	dfOneWeek = pd.concat(arrDaily[j], ignore_index=True)
+#for j in range(len(week01)):
 
-	#------------------------------------------
-	#aggregated (summarize) weekly data
-	#resulting 25 attributes: 
-	#'rid', 'sic', 'ntc10', 'amttc10', 'ntc13', 'amttc13', 'ncashb', 'amtcashb', 'ntc17','nfiid1','amtfiid1','nfiid2','amtfiid2','nfiid3','amtfiid3','nfiid4','amtfiid4','nfiid5','amtfiid5','nfiid6','amtfiid6','ntrans','amtRev', 'nreturn', 'amtreturn'
-	dfWeeklyDat = sumData(dfOneWeek)
+#------------------------------------------
+#daily data per week are concatenated into one
+dfOneWeek = pd.concat(week01, ignore_index=True)
 
-	#------------------------------------------
-	#get max revenue per week
-	#resulting attributes:
-	#'rid','sic','maxRev','nWeek','dt','daytime'
-	dfWeeklyMaxRev = weeklyMaxRevenue(dfOneWeek, j+1)
+#------------------------------------------
+#aggregated (summarize) weekly data
+#resulting 25 attributes: 
+#'rid', 'sic', 'ntc10', 'amttc10', 'ntc13', 'amttc13', 'ncashb', 'amtcashb', 'ntc17','nfiid1','amtfiid1','nfiid2','amtfiid2','nfiid3','amtfiid3','nfiid4','amtfiid4','nfiid5','amtfiid5','nfiid6','amtfiid6','ntrans','amtRev', 'nreturn', 'amtreturn'
+dfWeeklyDat = sumData(dfOneWeek)
 
-	#------------------------------------------
-	#extract relevant attributes for generating 6w slope from daily data and daytime when max revenue occurs 
-	datSlope = dfOneWeek[['rid','sic','dt','amtRev']]
-	datTime = dfOneWeek[['rid','sic','daytime']]
-	#store in array list
-	dailyList.append(datSlope)
-	timeList.append(datTime)
+#------------------------------------------
+#get max revenue per week
+#resulting attributes:
+#'rid','sic','maxRev','nWeek','dt','daytime'
+dfWeeklyMaxRev = weeklyMaxRevenue(dfOneWeek, 1)
 
-	#------------------------------------------
-	#dataframe of weekly slope
-	#resulting 3 attributes: 'rid','sic','weeklySlope'
-	datSorted = datSlope.sort_index(by='dt', ascending = True)
-	datGrp = datSorted.groupby(['rid','sic'])
-	weeklyGrp=[]
-	for name, group in datGrp:
-		weeklyGrp.append(group)
-	dfSlope = getWeeklySlope(weeklyGrp)
-	dfSlope['weeklySlope']=dfSlope['slopeInfo']
-	dfWeeklySlope = dfSlope[['rid','sic','weeklySlope']]
+#------------------------------------------
+#extract relevant attributes for generating 6w slope from daily data and daytime when max revenue occurs 
+datSlope = dfOneWeek[['rid','sic','dt','amtRev']]
+datTime = dfOneWeek[['rid','sic','daytime']]
+#store in array list
+dailyList.append(datSlope)
+timeList.append(datTime)
 
-	#------------------------------------------
-	#merge aggregated data frames
-	#resulting 29 attributes:
-	#'rid', 'sic', 'ntc10', 'amttc10', 'ntc13', 'amttc13', 'ncashb', 'amtcashb', 'ntc17','nfiid1','amtfiid1','nfiid2','amtfiid2','nfiid3','amtfiid3','nfiid4','amtfiid4','nfiid5','amtfiid5','nfiid6','amtfiid6','ntrans','amtRev', 'nreturn', 'amtreturn','maxRev','nWeek','dt','daytime','weeklySlope'
-	mrg = pd.merge(dfWeeklyDat,dfWeeklyMaxRev,how='outer',on=['rid','sic'])
-	dfWeekly = pd.merge(mrg,dfWeeklySlope,how='outer',on=['rid','sic'])
-	dfWeekly['slopeInfo']=dfWeekly['slopeInfo'].fillna(0)
+#------------------------------------------
+#dataframe of weekly slope
+#resulting 3 attributes: 'rid','sic','weeklySlope'
+datSorted = datSlope.sort_index(by='dt', ascending = True)
+datGrp = datSorted.groupby(['rid','sic'])
+weeklyGrp=[]
+for name, group in datGrp:
+	weeklyGrp.append(group)
+dfSlope = getWeeklySlope(weeklyGrp)
+dfSlope['weeklySlope']=dfSlope['slopeInfo']
+dfWeeklySlope = dfSlope[['rid','sic','weeklySlope']]
+
+#------------------------------------------
+#merge aggregated data frames
+#resulting 29 attributes:
+#'rid', 'sic', 'ntc10', 'amttc10', 'ntc13', 'amttc13', 'ncashb', 'amtcashb', 'ntc17','nfiid1','amtfiid1','nfiid2','amtfiid2','nfiid3','amtfiid3','nfiid4','amtfiid4','nfiid5','amtfiid5','nfiid6','amtfiid6','ntrans','amtRev', 'nreturn', 'amtreturn','maxRev','nWeek','dt','daytime','weeklySlope'
+mrg = pd.merge(dfWeeklyDat,dfWeeklyMaxRev,how='outer',on=['rid','sic'])
+dfWeekly = pd.merge(mrg,dfWeeklySlope,how='outer',on=['rid','sic'])
+dfWeekly['weeklySlope']=dfWeekly['weeklySlope'].fillna(0)
 	
 
-	weekList.append(dfWeekly)
+#weekList.append(dfWeekly)

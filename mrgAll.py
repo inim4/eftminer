@@ -26,6 +26,7 @@ def get6WSlope(dat6wSlope):
 
 	datSorted = dat6wSlope.sort_index(by='dt', ascending = True)
 	datGrp = datSorted.groupby(['rid','sic'])
+
 	
 	grp6W=[]
 	for name, group in datGrp:
@@ -36,13 +37,13 @@ def get6WSlope(dat6wSlope):
 	c[:].run('prep.py')
 	c[:].block = True
 	numC = len(c)
-	nIntv = len(grp6W)/16
+	nIntv = len(grp6W)/15
 	cGroup = []
 
 	for l in range(0,numC):
 		m = l * nIntv
 		n = (l+1) * nIntv
-		if l == 11:
+		if l == 14:
 			lastInd = len(grp6W)
 		else:
 			lastInd = n
@@ -69,16 +70,18 @@ def get6WSlope(dat6wSlope):
 	dfTheta13 = c[12].apply_sync(getSlope,cGroup[12])
 	dfTheta14 = c[13].apply_sync(getSlope,cGroup[13])
 	dfTheta15 = c[14].apply_sync(getSlope,cGroup[14])
-	dfTheta16 = c[15].apply_sync(getSlope,cGroup[15])
+	
 	
 
-	arrSlope = [dfTheta1,dfTheta2,dfTheta3,dfTheta4,dfTheta5,dfTheta6,dfTheta7,dfTheta8,dfTheta9,dfTheta10,dfTheta11,dfTheta12,dfTheta13,dfTheta14,dfTheta15,dfTheta16]
+	arrSlope = [dfTheta1,dfTheta2,dfTheta3,dfTheta4,dfTheta5,dfTheta6,dfTheta7,dfTheta8,dfTheta9,dfTheta10,dfTheta11,dfTheta12,dfTheta13,dfTheta14,dfTheta15]
 	dfSlope = pd.concat(arrSlope, ignore_index=True)
 	dfSlope['gradient']=dfSlope['slope'].apply(lambda x:round(math.degrees(np.arctan(x)),2))
 	# slope positive = 1, slope negative = 2 
 	dfSlope['slopeInfo']=dfSlope['slope'].apply(lambda x: 1 if x > 0 else 2)
 
 	df6wSlope = dfSlope[['rid','sic','slopeInfo','gradient','intercept']]
+	
+	del datSorted,datGrp,grp6W,cGroup,indGrp,dfTheta1,dfTheta2,dfTheta3,dfTheta4,dfTheta5,dfTheta6,dfTheta7,dfTheta8,dfTheta9,dfTheta10,dfTheta11,dfTheta12,dfTheta13,dfTheta14,dfTheta15,arrSlope,dfSlope
 
 	return df6wSlope
 
