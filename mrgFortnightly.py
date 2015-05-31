@@ -32,36 +32,36 @@ arrSlope =[dailyList[0],dailyList[1]]
 # --------------------------------------------------------------
 # function to compute fortnightly slope
 # --------------------------------------------------------------
-def get2WSlope(dat2wSlope):
-
-	datSorted = dat2wSlope.sort_index(by='dt', ascending = True)
-	datGrp = datSorted.groupby(['rid','sic'])
+def get2WSlope(slopeGrp):
 
 	
-	grp2W=[]
-	for name, group in datGrp:
-		grp2W.append(group)
 
 	# Connect to the IPython cluster
 	c = Client(profile='titaClusters')
 	c[:].run('prep.py')
 	c[:].block = True
+	c[:].results.clear()
+	c[:].client.results.clear()
+	c[:].client.metadata.clear()
+	c[:].history=[]
+	c[:].client.history=[]
+	c[:].client.session.digest_history.clear()
 	numC = len(c)
-	nIntv = len(grp2W)/15
+	nIntv = len(slopeGrp)/15
 	cGroup = []
 
 	for l in range(0,numC):
 		m = l * nIntv
 		n = (l+1) * nIntv
 		if l == 14:
-			lastInd = len(grp2W)
+			lastInd = len(slopeGrp)
 		else:
 			lastInd = n
 		indGrp = []
 		for o in range(m,lastInd):
 			#if grouped dataset has greater than 1 record (so the slope can be calculated - at least 2 data points)
-			if len(grp2W[o]) > 1:
-				indGrp.append(grp2W[o])
+			if len(slopeGrp[o]) > 1:
+				indGrp.append(slopeGrp[o])
 		cGroup.append(indGrp)
 
 	#parallel calculation of weekly slope
@@ -85,7 +85,7 @@ def get2WSlope(dat2wSlope):
 	dfSlope = pd.concat(arrSlope, ignore_index=True)
 	dfSlope['gradient']=dfSlope['slope'].apply(lambda x:round(math.degrees(np.arctan(x)),2))
 	# slope positive = 1, slope negative = 2 
-	dfSlope['slopeInfo']=dfSlope['slope'].apply(lambda x: 1 if x > 0 else 2)
+	dfSlope['slopeInfo']=dfSlope['slope'].apply(lambda x: 1 if x > 0 else (0 if x == 0 else 2))
 
 	df2wSlope = dfSlope[['rid','sic','slopeInfo']]
 
@@ -95,13 +95,20 @@ def get2WSlope(dat2wSlope):
 
 def calcContRatio(fortnightGrp):
 
-	from IPython.parallel import Client
+	
 	# Connect to the IPython cluster
 	# Start 15 cluster engines
 	c = Client(profile='titaClusters')
 	c[:].run('prep.py')
 	c[:].block = True
+	c[:].results.clear()
+	c[:].client.results.clear()
+	c[:].client.metadata.clear()
+	c[:].history=[]
+	c[:].client.history=[]
+	c[:].client.session.digest_history.clear()
 	numC = len(c)
+	
 	#grouped rid+sic are distributed to 15 engines (e.g. 1 engine processes 500 groups)
 	nIntv = len(fortnightGrp)/15
 	cGroup = []
@@ -136,21 +143,80 @@ def calcContRatio(fortnightGrp):
 	dfTheta14 = c[13].apply_sync(getContRatio,cGroup[13])
 	dfTheta15 = c[14].apply_sync(getContRatio,cGroup[14])
 	
+	
 	arrContRatio = [dfTheta1,dfTheta2,dfTheta3,dfTheta4,dfTheta5,dfTheta6,dfTheta7,dfTheta8,dfTheta9,dfTheta10,dfTheta11,dfTheta12,dfTheta13,dfTheta14,dfTheta15]
 	dfContRatio = pd.concat(arrContRatio, ignore_index=True)
 	
 	del dfTheta1,dfTheta2,dfTheta3,dfTheta4,dfTheta5,dfTheta6,dfTheta7,dfTheta8,dfTheta9,dfTheta10,dfTheta11,dfTheta12,dfTheta13,dfTheta14,dfTheta15,cGroup,indGrp
 	
 	return dfContRatio
-''''
+
+def calcChangePoint(fortnightGrp):
+
+	
+	# Connect to the IPython cluster
+	# Start 15 cluster engines
+	c = Client(profile='titaClusters')
+	c[:].run('prep.py')
+	c[:].block = True
+	c[:].results.clear()
+	c[:].client.results.clear()
+	c[:].client.metadata.clear()
+	c[:].history=[]
+	c[:].client.history=[]
+	c[:].client.session.digest_history.clear()
+	numC = len(c)
+	
+	#grouped rid+sic are distributed to 15 engines (e.g. 1 engine processes 500 groups)
+	nIntv = len(fortnightGrp)/15
+	cGroup = []
+
+	for l in range(0,numC):
+		m = l * nIntv
+		n = (l+1) * nIntv
+		if l == 14:
+			lastInd = len(fortnightGrp)
+		else:
+			lastInd = n
+		indGrp = []
+		
+		for o in range(m,lastInd):
+			indGrp.append(fortnightGrp[o])
+		cGroup.append(indGrp)
+		
+	#parallel calculation of weekly slope using 15 cluster engines
+	dfTheta1 = c[0].apply_sync(getChangePoint,cGroup[0])
+	dfTheta2 = c[1].apply_sync(getChangePoint,cGroup[1])
+	dfTheta3 = c[2].apply_sync(getChangePoint,cGroup[2])
+	dfTheta4 = c[3].apply_sync(getChangePoint,cGroup[3])
+	dfTheta5 = c[4].apply_sync(getChangePoint,cGroup[4])
+	dfTheta6 = c[5].apply_sync(getChangePoint,cGroup[5])
+	dfTheta7 = c[6].apply_sync(getChangePoint,cGroup[6])
+	dfTheta8 = c[7].apply_sync(getChangePoint,cGroup[7])
+	dfTheta9 = c[8].apply_sync(getChangePoint,cGroup[8])
+	dfTheta10 = c[9].apply_sync(getChangePoint,cGroup[9])
+	dfTheta11 = c[10].apply_sync(getChangePoint,cGroup[10])
+	dfTheta12 = c[11].apply_sync(getChangePoint,cGroup[11])
+	dfTheta13 = c[12].apply_sync(getChangePoint,cGroup[12])
+	dfTheta14 = c[13].apply_sync(getChangePoint,cGroup[13])
+	dfTheta15 = c[14].apply_sync(getChangePoint,cGroup[14])
+	
+	
+	arrCP = [dfTheta1,dfTheta2,dfTheta3,dfTheta4,dfTheta5,dfTheta6,dfTheta7,dfTheta8,dfTheta9,dfTheta10,dfTheta11,dfTheta12,dfTheta13,dfTheta14,dfTheta15]
+	dfCP = pd.concat(arrContRatio, ignore_index=True)
+	
+	del dfTheta1,dfTheta2,dfTheta3,dfTheta4,dfTheta5,dfTheta6,dfTheta7,dfTheta8,dfTheta9,dfTheta10,dfTheta11,dfTheta12,dfTheta13,dfTheta14,dfTheta15,cGroup,indGrp
+	
+	return dfCP
+
 #array of summarized weekly data per fortnight
-aggFortnightList=[]
+#aggFortnightList=[]
 
 #array for ratio contribution per fortnight
-arrContRatio=[]
+#arrContRatio=[]
 
 #array for combination of change point & 2w slope per fortnight
-arrCombineCP=[]
+#arrCombineCP=[]
 
 #for i in range(len(arrFortnight)):
 
@@ -167,29 +233,39 @@ slopeInfo = dat2w[['rid','sic','nWeek','weeklySlope']]
 #compute initial contribution -- only for the first fortnight dataset
 #resulting 3 attributes: 'rid', 'sic', 'initCont'
 #if i == 0:
-dfCont = getInitCont(datCont)
+#dfCont = getInitCont(datCont)
 	
 #------------------------------------------
 #--2
 #get ratio between first week and second week contribution
 #resulting 3 attributes: 'rid', 'sic', 'contRatio'
-'''
+
 retailerGrp = datCont.groupby(['rid','sic'])
-grpName=[]
+grp2w=[]
 for name, group in retailerGrp:
-	grpName.append(group)
-dfContRatio = getContRatio(grpName)
+	grp2w.append(group)
+
+dfContRatio = calcContRatio(grp2w)
 arrContRatio.append(dfContRatio)
-'''
+
 #get change point of weekly slope within fortnightly dataset
 #resulting 3 attributes: 'rid', 'sic', 'changePoint'
-dfChangePoint = getChangePoint(slopeInfo)
+slopeDat = slopeInfo[slopeInfo['weeklySlope'] != 0]
+cpGrp = slopeDat.groupby(['rid','sic'])
+grp2w=[]
+for name, group in cpGrp:
+	grp2w.append(group)
+dfChangePoint = getChangePoint(grp2w)
 
 #get 2 weeks slope
 #resulting 3 attributes: 'rid', 'sic', 'slopeInfo'
-datSlope = pd.concat(arrSlope[i], ignore_index=True)
+datSlope = pd.concat(arrSlope, ignore_index=True)
 dat2wSlope = datSlope[['rid','sic','dt','amtRev']]
-df2wSlope = get2WSlope(dat2wSlope)
+slopeGrp = dat2wSlope.groupby(['rid','sic'])
+grp2w=[]
+for name, group in slopeGrp:
+	grp2w.append(group)
+df2wSlope = get2WSlope(grp2w)
 
 
 #------------------------------------------

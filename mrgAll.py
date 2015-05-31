@@ -22,15 +22,9 @@ resulting data:
 # --------------------------------------------------------------
 # function to compute all 6 weeks slope
 # --------------------------------------------------------------
-def get6WSlope(dat6wSlope):
-
-	datSorted = dat6wSlope.sort_index(by='dt', ascending = True)
-	datGrp = datSorted.groupby(['rid','sic'])
+def get6WSlope(grp6W):
 
 	
-	grp6W=[]
-	for name, group in datGrp:
-		grp6W.append(group)
 
 	# Connect to the IPython cluster
 	c = Client(profile='titaClusters')
@@ -77,7 +71,7 @@ def get6WSlope(dat6wSlope):
 	dfSlope = pd.concat(arrSlope, ignore_index=True)
 	dfSlope['gradient']=dfSlope['slope'].apply(lambda x:round(math.degrees(np.arctan(x)),2))
 	# slope positive = 1, slope negative = 2 
-	dfSlope['slopeInfo']=dfSlope['slope'].apply(lambda x: 1 if x > 0 else 2)
+	dfSlope['slopeInfo']=dfSlope['slope'].apply(lambda x: 1 if x > 0 else (0 if x == 0 else 2))
 
 	df6wSlope = dfSlope[['rid','sic','slopeInfo','gradient','intercept']]
 	
@@ -105,7 +99,11 @@ dfMaxRev = getMaxRevenue(dat6w)
 datCombineCP = pd.concat(arrCombineCP, ignore_index=True)
 #get mode of combination
 #resulting 3 attributes: 'rid', 'sic', 'combineSlope'
-dfModeCombineCP = getModeCombineCP(datCombineCP)
+dfCombine = datCombineCP.groupby(['rid','sic'])
+grp6w=[]
+for name, group in dfCombine:
+	grp6w.append(group)
+dfModeCombineCP = getModeCombineCP(grp6w)
 
 #------------------------------------------
 #4
@@ -119,7 +117,11 @@ dfWeekMaxRev = getModeWeek(datWeekMaxRev)
 #processing daily data
 #resulting 5 attributes of 6w slope: 'rid','sic','slopeInfo','gradient','intercept'
 dat6wSlope = pd.concat(dailyList, ignore_index=True)
-df6wSlope = get6WSlope(dat6wSlope)
+slopeGrp = dat6wSlope.groupby(['rid','sic'])
+grp6w=[]
+for name, group in slopeGrp:
+	grp6w.append(group)
+df6wSlope = get6WSlope(grp6w)
 
 #------------------------------------------
 #6
@@ -127,5 +129,52 @@ df6wSlope = get6WSlope(dat6wSlope)
 #resulting attributes: 'rid', 'sic', 'timeMaxRev'
 dfDaytime = pd.concat(timeList, ignore_index=True)
 dfModeTime = getModeTime(dfDaytime)
+
+#merge all dataframes
+df1 =  pd.merge(df6w,dfMaxRev,how='outer',on=['rid','sic'])
+df2 =  pd.merge(df1,dfModeCombineCP,how='outer',on=['rid','sic'])
+df3 =  pd.merge(df2,dfWeekMaxRev,how='outer',on=['rid','sic'])
+df4 =  pd.merge(df3,df6wSlope,how='outer',on=['rid','sic'])
+dfAll =  pd.merge(df4,dfModeTime,how='outer',on=['rid','sic'])
+
+dfAll['ntc10']=dfAll['ntc10'].fillna(0)
+dfAll['amttc10']=dfAll['amttc10'].fillna(0)
+dfAll['ntc13']=dfAll['ntc13'].fillna(0)
+dfAll['amttc13']=dfAll['amttc13'].fillna(0)
+dfAll['ncashb']=dfAll['ncashb'].fillna(0)
+dfAll['amtcashb']=dfAll['amtcashb'].fillna(0)
+dfAll['ntc17']=dfAll['ntc17'].fillna(0)
+dfAll['nreturn']=dfAll['nreturn'].fillna(0)
+dfAll['amtreturn']=dfAll['amtreturn'].fillna(0)
+dfAll['nfiid1']=dfAll['nfiid1'].fillna(0)
+dfAll['nfiid2']=dfAll['nfiid2'].fillna(0)
+dfAll['nfiid3']=dfAll['nfiid3'].fillna(0)
+dfAll['nfiid4']=dfAll['nfiid4'].fillna(0)
+dfAll['nfiid5']=dfAll['nfiid5'].fillna(0)
+dfAll['nfiid6']=dfAll['nfiid6'].fillna(0)
+dfAll['amtfiid1']=dfAll['amtfiid1'].fillna(0)
+dfAll['amtfiid2']=dfAll['amtfiid2'].fillna(0)
+dfAll['amtfiid3']=dfAll['amtfiid3'].fillna(0)
+dfAll['amtfiid4']=dfAll['amtfiid4'].fillna(0)
+dfAll['amtfiid5']=dfAll['amtfiid5'].fillna(0)
+dfAll['amtfiid6']=dfAll['amtfiid6'].fillna(0)
+dfAll['amtRev']=dfAll['amtRev'].fillna(0)
+dfAll['ntrans']=dfAll['ntrans'].fillna(0)
+dfAll['maxRev']=dfAll['maxRev'].fillna(0)
+dfAll['initCont']=dfAll['initCont'].fillna(0)
+dfAll['combineSlope']=dfAll['combineSlope'].fillna(0)
+dfAll['slopeInfo']=dfAll['slopeInfo'].fillna(0)
+dfAll['gradient']=dfAll['gradient'].fillna(0)
+dfAll['intercept']=dfAll['intercept'].fillna(0)
+
+dfAll['meanRev']= (dfAll['amtRev'] / dfAll['ntrans'])
+minMeanRev = dfAll['meanRev'].min()
+maxMeanRev = dfAll['meanRev'].max()
+dfAll['normMeanRev']=(dfAll['meanRev']-minMeanRev)/(maxMeanRev-minMeanRev)
+minMaxRev = dfAll['maxRev'].min()
+maxMaxRev = dfAll['maxRev'].max()
+dfAll['normMaxRev']=(dfAll['maxRev']-minMaxRev)/(maxMaxRev-minMaxRev)
+
+del df6w,dfMaxRev,dfModeCombineCP,dfWeekMaxRev,df6wSlope,dfModeTime,timeList,dailyList,dfDaytime,dat6wSlope,datWeekMaxRev,datCombineCP,dat6w
 
 

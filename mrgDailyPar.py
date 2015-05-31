@@ -6,36 +6,40 @@ import time
 import datetime
 from datetime import datetime
 from timeit import default_timer as clock
+import gc
 from sklearn.linear_model import LinearRegression
 from prep import *
 
-fileName = 'dat%(i)02d'
-names = [fileName % {'i':i} for i in range(1,8)]
-strDate = '2013-09-%(j)02d' 
-dates = [strDate %{'j':j} for j in range(5,12)]
+
+strDate = '2013-10-%(j)02d' 
+dates = [strDate %{'j':j} for j in range(10,17)]
+
 
 # function to summarize daily data
-def prepDaily(dataName, strdate, week):
+def prepDaily(dayData, dayDate, dayWeek):
 
-	#dat = readData(dataName)
+	
 
 	# --------------------------
 	# function selectData(arg1,arg2,nWeek)
 	# nWeek is manually added
-	slc = selectData(dataName,strdate,week)
+	slc = selectData(dayData,dayDate,dayWeek)
 	trans = selectTrans(slc)
-	returnDat = trans[1]
-	arrTrans = frameTrans(trans)
+	dfDT = getDayTime(trans)
+	dfsic = filterSic(dfDT)
+	dat = dfsic[0]
+	returnDat = dfsic[1]
+	rev = frameTrans(dat)
 
 	# --------------------------
 	# resulting 16 attributes from original transaction dataset
 	# 'strretailerid','sic','strdate','dt','daytime','nWeek','acqfiid','cardfiid', 'strcardno','tc','t','aa','c','famt1','famt2', 'famt'
-	datTrans = arrTrans[0]
+	datTrans = rev[0]
 
 	# --------------------------
 	# resulting 9 total transaction and monetary attributes
 	# 'rid', 'sic', 'ntc10', 'amttc10', 'ntc13', 'amttc13', 'ncashb', 'amtcashb', 'ntc17'
-	dfTrans = arrTrans[1]
+	dfTrans = rev[1]
 
 	# --------------------------
 	# resulting 4 attributes
@@ -51,7 +55,7 @@ def prepDaily(dataName, strdate, week):
 	# computeRevenue(datTrans,nWeek), nWeek is manually added
 	# resulting 8 attributes
 	# 'rid','sic','dt','daytime','nWeek','ntrans','amtRev','maxRev'
-	dfRev = computeRevenue(datTrans,week)
+	dfRev = computeRevenue(datTrans,dayWeek)
 	
 	# daily data
 	# resulting 29 attributes from 4 data frames
@@ -64,22 +68,34 @@ def prepDaily(dataName, strdate, week):
 
 # Connect to the IPython cluster
 # set 7 cluster engines, 1 cluster preprocess 1 daily data (total 7 daily dataset per week)
+'''
 c = Client(profile='titaClusters')
 c[:].run('prep.py')
 c[:].block = True
 numC = len(c)
 
-day1 = c[0].apply_sync(prepDaily,names[0],dates[0],1)
-day2 = c[1].apply_sync(prepDaily,names[1],dates[1],1)
-day3 = c[2].apply_sync(prepDaily,names[2],dates[2],1)
-day4 = c[3].apply_sync(prepDaily,names[3],dates[3],1)
-day5 = c[4].apply_sync(prepDaily,names[4],dates[4],1)
-day6 = c[5].apply_sync(prepDaily,names[5],dates[5],1)
-day7 = c[6].apply_sync(prepDaily,names[6],dates[6],1)
+day01 = c[0].apply_sync(prepDaily,datWeek01[0],dates[0],1)
+day02 = c[1].apply_sync(prepDaily,datWeek01[1],dates[1],1)
+day03 = c[2].apply_sync(prepDaily,datWeek01[2],dates[2],1)
+day04 = c[3].apply_sync(prepDaily,datWeek01[3],dates[3],1)
+day05 = c[4].apply_sync(prepDaily,datWeek01[4],dates[4],1)
+day06 = c[5].apply_sync(prepDaily,datWeek01[5],dates[5],1)
+day07 = c[6].apply_sync(prepDaily,datWeek01[6],dates[6],1)
 
-# Array list for week 1 dataset, week number is set manually (e.g. datList1, datList2,...)
+
+slc01 = c[0].apply_sync(selectData,datWeek01[0],dates[0],1)
+slc02 = c[1].apply_sync(selectData,datWeek01[1],dates[1],1)
+slc03 = c[2].apply_sync(selectData,datWeek01[2],dates[2],1)
+slc04 = c[3].apply_sync(selectData,datWeek01[3],dates[3],1)
+slc05 = c[4].apply_sync(selectData,datWeek01[4],dates[4],1)
+slc06 = c[5].apply_sync(selectData,datWeek01[5],dates[5],1)
+slc07 = c[6].apply_sync(selectData,datWeek01[6],dates[6],1)
+'''
+
+
+day14 = prepDaily(dat14,dates[6],2)
 # consists of 7 daily data, 1 week = 7 days
-datList01 = [day1,day2,day3,day4,day5,day6,day7]
+#week01 = [day01,day02,day03,day04,day05,day06,day07]
 
 
 
